@@ -57,9 +57,9 @@ function MainApp() {
         {/* Safe-area Top Header - Stays inside mobile column on both desktop & mobile */}
         <header className="w-full px-4 pt-safe pb-2 flex items-center justify-between z-30">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-retro-day-accent dark:bg-retro-night-accent animate-pulse" />
-            <span className="text-[11px] font-bold tracking-widest uppercase text-retro-day-textMuted dark:text-retro-night-textMuted">
-              Calisthenics Club
+            <img src="/icon.svg" alt="Chalk & Timber" className="w-5 h-5 rounded-md shadow-sm" />
+            <span className="text-xs font-bold tracking-wider uppercase text-retro-day-text dark:text-retro-night-text font-sans">
+              Chalk &amp; Timber
             </span>
           </div>
           <ThemeToggle />

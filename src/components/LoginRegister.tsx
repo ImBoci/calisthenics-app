@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Lock, Mail, User, Sparkles, AlertCircle } from 'lucide-react';
+import { Lock, Mail, User, AlertCircle } from 'lucide-react';
 
 interface LoginRegisterProps {
   onAuthSuccess: () => void;
@@ -126,14 +126,18 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
     <div className="w-full max-w-sm mx-auto py-4">
       {/* Brand Header */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-retro-day-accentSoft dark:bg-retro-night-accentSoft border-2 border-retro-day-accent/40 dark:border-retro-night-accent/40 text-retro-day-accent dark:text-retro-night-accent shadow-sm mb-3">
-          <Sparkles className="w-7 h-7" />
+        <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-3xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-3">
+          <img
+            src="/icon.svg"
+            alt="Chalk & Timber Logo"
+            className="w-16 h-16 rounded-[22px] object-cover"
+          />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-retro-day-text dark:text-retro-night-text font-sans">
-          Calisthenics Club
+        <h1 className="text-2xl font-extrabold tracking-tight text-retro-day-text dark:text-retro-night-text font-sans">
+          Chalk &amp; Timber
         </h1>
-        <p className="text-sm mt-1 text-retro-day-textMuted dark:text-retro-night-textMuted">
-          Stage 1: Squad Access & Profiles
+        <p className="text-xs font-medium mt-1 text-retro-day-textMuted dark:text-retro-night-textMuted tracking-wide">
+          Squad Calisthenics &amp; Progression
         </p>
       </div>
 
@@ -268,7 +272,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
             {loading ? (
               <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : isSignUp ? (
-              'Join Calisthenics Club'
+              'Join Chalk & Timber'
             ) : (
               'Sign In'
             )}
