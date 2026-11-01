@@ -125,8 +125,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   return (
     <div className="w-full max-w-sm mx-auto py-4">
       {/* Brand Header */}
-      <div className="text-center mb-8">
-        <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-3xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-3">
+      <div className="text-center mb-6">
+        <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-3xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-2.5">
           <img
             src="/icon.svg"
             alt="Chalk & Timber Logo"
@@ -142,7 +142,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       </div>
 
       {/* Retro Tab Switch */}
-      <div className="flex bg-retro-day-cardAlt dark:bg-retro-night-cardAlt p-1 rounded-xl mb-6 border border-retro-day-border dark:border-retro-night-border">
+      <div className="flex bg-retro-day-cardAlt dark:bg-retro-night-cardAlt p-1 rounded-xl mb-5 border border-retro-day-border dark:border-retro-night-border">
         <button
           type="button"
           onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
@@ -279,10 +279,6 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           </button>
         </form>
       </div>
-
-      <p className="text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mt-6">
-        Squad Edition • Optimized for iPhone Browser
-      </p>
     </div>
-      );
+  );
 };

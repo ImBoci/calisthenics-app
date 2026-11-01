@@ -73,9 +73,11 @@ function MainApp() {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col justify-center px-4">
+        <main className="flex-1 flex flex-col justify-center px-4 pb-6 sm:pb-12">
           {!session ? (
-            <LoginRegister onAuthSuccess={handleAuthSuccess} />
+            <div className="w-full my-auto -translate-y-4 sm:-translate-y-8 transition-transform">
+              <LoginRegister onAuthSuccess={handleAuthSuccess} />
+            </div>
           ) : (
             <div className="flex-1 pb-24">
               {currentTab === 'profile' && <ProfileView onLogout={handleLogout} />}
