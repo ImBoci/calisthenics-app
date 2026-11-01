@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Profile } from '../lib/supabase';
-import { ThemeToggle } from './ThemeToggle';
 import { 
   LogOut, 
   Dumbbell, 
@@ -132,18 +131,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-24 pt-4">
-      {/* Top Header Card */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent">
-            Stage 1 Squad
-          </span>
-          <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-            Athlete Card
-          </h2>
-        </div>
-        <ThemeToggle />
+    <div className="w-full max-w-md mx-auto pt-2 pb-6">
+      {/* Athlete Card Header */}
+      <div className="mb-4">
+        <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent">
+          Stage 1 Squad
+        </span>
+        <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
+          Athlete Card
+        </h2>
       </div>
 
       {feedbackMsg && (

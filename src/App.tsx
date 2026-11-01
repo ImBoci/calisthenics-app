@@ -51,71 +51,76 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200">
-      {/* Top Safe Area Spacing */}
-      <div className="pt-safe" />
-
-      {/* Unconfigured Alert Banner */}
-      {!isSupabaseConfigured && (
-        <div className="mx-4 mt-3 p-3 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs text-center shadow-sm">
-          <strong>Supabase setup needed:</strong> Copy <code>.env.example</code> to <code>.env</code> and insert your Supabase URL & Anon Key.
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col justify-center">
-        {!session ? (
-          <div className="relative">
-            {/* Day/Night switch pinned on top for auth view */}
-            <div className="absolute top-2 right-4 z-20">
-              <ThemeToggle />
-            </div>
-            <LoginRegister onAuthSuccess={handleAuthSuccess} />
+    <div className="min-h-screen bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200 flex flex-col justify-between">
+      {/* Centered mobile-first container */}
+      <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen relative">
+        {/* Safe-area Top Header - Stays inside mobile column on both desktop & mobile */}
+        <header className="w-full px-4 pt-safe pb-2 flex items-center justify-between z-30">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-retro-day-accent dark:bg-retro-night-accent animate-pulse" />
+            <span className="text-[11px] font-bold tracking-widest uppercase text-retro-day-textMuted dark:text-retro-night-textMuted">
+              Calisthenics Club
+            </span>
           </div>
-        ) : (
-          <div className="flex-1">
-            {currentTab === 'profile' && <ProfileView onLogout={handleLogout} />}
+          <ThemeToggle />
+        </header>
 
-            {currentTab === 'workouts' && (
-              <div className="w-full max-w-md mx-auto px-6 py-20 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
-                  <Dumbbell className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Stage 2: Workout Logging</h3>
-                <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
-                  Coming soon! Track sets, reps, and calisthenics progressions with your 2 squad mates.
-                </p>
-                <button
-                  onClick={() => setCurrentTab('profile')}
-                  className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
-                >
-                  Back to Profile
-                </button>
-              </div>
-            )}
-
-            {currentTab === 'leaderboard' && (
-              <div className="w-full max-w-md mx-auto px-6 py-20 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
-                  <Trophy className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Stage 3: Squad Leaderboard</h3>
-                <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
-                  Compete with your 2 friends on weekly points, consistency streaks, and pull-up records.
-                </p>
-                <button
-                  onClick={() => setCurrentTab('profile')}
-                  className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
-                >
-                  Back to Profile
-                </button>
-              </div>
-            )}
-
-            <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+        {/* Unconfigured Alert Banner */}
+        {!isSupabaseConfigured && (
+          <div className="mx-4 mb-2 p-3 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs text-center shadow-sm">
+            <strong>Supabase setup needed:</strong> Add credentials in <code>.env.local</code>.
           </div>
         )}
-      </main>
+
+        {/* Main Content Area */}
+        <main className="flex-1 flex flex-col justify-center px-4">
+          {!session ? (
+            <LoginRegister onAuthSuccess={handleAuthSuccess} />
+          ) : (
+            <div className="flex-1 pb-24">
+              {currentTab === 'profile' && <ProfileView onLogout={handleLogout} />}
+
+              {currentTab === 'workouts' && (
+                <div className="w-full py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
+                    <Dumbbell className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Stage 2: Workout Logging</h3>
+                  <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
+                    Coming soon! Track sets, reps, and calisthenics progressions with your 2 squad mates.
+                  </p>
+                  <button
+                    onClick={() => setCurrentTab('profile')}
+                    className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
+                  >
+                    Back to Profile
+                  </button>
+                </div>
+              )}
+
+              {currentTab === 'leaderboard' && (
+                <div className="w-full py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
+                    <Trophy className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Stage 3: Squad Leaderboard</h3>
+                  <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
+                    Compete with your 2 friends on weekly points, consistency streaks, and pull-up records.
+                  </p>
+                  <button
+                    onClick={() => setCurrentTab('profile')}
+                    className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
+                  >
+                    Back to Profile
+                  </button>
+                </div>
+              )}
+
+              <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
@@ -127,4 +132,3 @@ export default function App() {
     </ThemeProvider>
   );
 }
-

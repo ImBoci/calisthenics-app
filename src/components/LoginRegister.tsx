@@ -55,21 +55,21 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           throw new Error('Username can only contain letters, numbers, and underscores.');
         }
 
-        const trimmedEmail = email.trim();
+          const trimmedEmail = email.trim();
 
-        // 1. Create account with metadata
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: trimmedEmail,
-          password,
-          options: {
-            data: {
-              username: cleanUsername,
-              display_name: displayName.trim(),
+          // 1. Create account with metadata
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: trimmedEmail,
+            password,
+            options: {
+              data: {
+                username: cleanUsername,
+                display_name: displayName.trim(),
+              },
             },
-          },
-        });
+          });
 
-        if (signUpError) throw signUpError;
+          if(signUpError) throw signUpError;
 
         // 2. Instant session establishment:
         // If email confirmation is disabled, session might already be present.
@@ -123,7 +123,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto px-4 py-8">
+    <div className="w-full max-w-sm mx-auto py-4">
       {/* Brand Header */}
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-retro-day-accentSoft dark:bg-retro-night-accentSoft border-2 border-retro-day-accent/40 dark:border-retro-night-accent/40 text-retro-day-accent dark:text-retro-night-accent shadow-sm mb-3">
@@ -142,22 +142,20 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
         <button
           type="button"
           onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 ${
-            !isSignUp
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 ${!isSignUp
               ? 'bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-text dark:text-retro-night-text shadow-sm'
               : 'text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text'
-          }`}
+            }`}
         >
           Sign In
         </button>
         <button
           type="button"
           onClick={() => { setIsSignUp(true); setErrorMsg(null); }}
-          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 ${
-            isSignUp
+          className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-95 ${isSignUp
               ? 'bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-text dark:text-retro-night-text shadow-sm'
               : 'text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text'
-          }`}
+            }`}
         >
           Create Account
         </button>
@@ -282,5 +280,5 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
         Squad Edition • Optimized for iPhone Browser
       </p>
     </div>
-  );
+      );
 };
