@@ -15,12 +15,30 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Friendly human-readable error messages for retro styling
+  const formatAuthError = (message: string): string => {
+    const lower = message.toLowerCase();
+    if (lower.includes('already registered') || lower.includes('user already exists')) {
+      return 'An account with this email already exists. Try signing in instead!';
+    }
+    if (lower.includes('at least 6 characters') || lower.includes('weak password')) {
+      return 'Password must be at least 6 characters long.';
+    }
+    if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
+      return 'Incorrect email or password. Please double-check your credentials.';
+    }
+    if (lower.includes('rate limit')) {
+      return 'Too many login attempts. Please wait a moment and try again.';
+    }
+    return message;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
     if (!isSupabaseConfigured) {
-      setErrorMsg('Supabase is not configured yet. Please add your credentials in .env.');
+      setErrorMsg('Supabase is not configured yet. Please check your credentials in .env.');
       return;
     }
 
@@ -29,13 +47,19 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
     try {
       if (isSignUp) {
         if (!username.trim() || !displayName.trim()) {
-          throw new Error('Please enter both a username and display name');
+          throw new Error('Please enter both a display name and a username.');
         }
 
         const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (!cleanUsername) {
+          throw new Error('Username can only contain letters, numbers, and underscores.');
+        }
 
-        const { data, error } = await supabase.auth.signUp({
-          email,
+        const trimmedEmail = email.trim();
+
+        // 1. Create account with metadata
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: trimmedEmail,
           password,
           options: {
             data: {
@@ -45,17 +69,42 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           },
         });
 
-        if (error) throw error;
+        if (signUpError) throw signUpError;
 
-        // If email confirmation is disabled in Supabase, session is active immediately
-        if (data.session) {
-          onAuthSuccess();
-        } else if (data.user) {
-          setErrorMsg('Account created! Please check your email to confirm registration or disable email confirmations in Supabase.');
+        // 2. Instant session establishment:
+        // If email confirmation is disabled, session might already be present.
+        // If not, sign in immediately with credentials so user is logged in instantly.
+        let activeSession = signUpData.session;
+        if (!activeSession) {
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: trimmedEmail,
+            password,
+          });
+          if (signInError) throw signInError;
+          activeSession = signInData.session;
         }
+
+        // 3. Ensure the profiles table row is initialized with chosen credentials
+        const userId = activeSession?.user?.id || signUpData.user?.id;
+        if (userId) {
+          await supabase.from('profiles').upsert(
+            {
+              id: userId,
+              username: cleanUsername,
+              display_name: displayName.trim(),
+              starting_level: 'Beginner',
+              favorite_exercise: 'Pull-ups',
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          );
+        }
+
+        // 4. Immediately route to profile screen
+        onAuthSuccess();
       } else {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
 
@@ -64,9 +113,9 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setErrorMsg(err.message);
+        setErrorMsg(formatAuthError(err.message));
       } else {
-        setErrorMsg('An unexpected error occurred');
+        setErrorMsg('An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -116,10 +165,11 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
 
       {/* Main Card */}
       <div className="bg-retro-day-card dark:bg-retro-night-card rounded-2xl p-6 border-2 border-retro-day-border dark:border-retro-night-border shadow-[0_4px_20px_-4px_rgba(74,55,40,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]">
+        {/* Retro Styled Inline Error Banner */}
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div className="flex-1 leading-relaxed">{errorMsg}</div>
+          <div className="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-[#342722] border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5 shadow-sm animate-in fade-in duration-200">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
+            <div className="flex-1 leading-relaxed font-medium">{errorMsg}</div>
           </div>
         )}
 
@@ -140,7 +190,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Alex (Iron Grip)"
-                    className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all"
+                    className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
                   />
                 </div>
               </div>
@@ -160,7 +210,9 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                     onChange={(e) => setUsername(e.target.value.toLowerCase())}
                     placeholder="alex_pullups"
                     autoCapitalize="none"
-                    className="w-full pl-9 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all font-mono"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    className="w-full pl-9 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all font-mono text-base"
                   />
                 </div>
               </div>
@@ -183,7 +235,9 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                 placeholder="athlete@gym.app"
                 autoComplete="email"
                 autoCapitalize="none"
-                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all"
+                autoCorrect="off"
+                spellCheck="false"
+                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
               />
             </div>
           </div>
@@ -203,7 +257,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
               />
             </div>
           </div>
@@ -211,7 +265,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3.5 px-4 bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white font-semibold rounded-xl transition-all duration-200 active:scale-[0.98] shadow-md shadow-retro-day-accent/25 dark:shadow-retro-night-accent/25 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full mt-2 py-3.5 px-4 bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white font-semibold rounded-xl transition-all duration-200 active:scale-[0.98] shadow-md shadow-retro-day-accent/25 dark:shadow-retro-night-accent/25 disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation"
           >
             {loading ? (
               <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -225,9 +279,8 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       </div>
 
       <p className="text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mt-6">
-        Squad Edition • Optimized for Mobile Browsers
+        Squad Edition • Optimized for iPhone Browser
       </p>
     </div>
   );
 };
-

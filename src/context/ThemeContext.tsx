@@ -21,13 +21,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
+      root.style.colorScheme = 'dark';
     } else {
       root.classList.remove('dark');
+      root.style.colorScheme = 'light';
     }
     localStorage.setItem('calisthenics-theme', theme);
 
     // Update Safari browser header color dynamically
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    const metaThemeColor = document.getElementById('theme-color-meta') || document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', theme === 'dark' ? '#1C1917' : '#F9F6F0');
     }

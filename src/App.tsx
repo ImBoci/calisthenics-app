@@ -29,8 +29,17 @@ function MainApp() {
     return () => subscription.unsubscribe();
   }, []);
 
+  const handleAuthSuccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setSession(session);
+      setCurrentTab('profile');
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setSession(null);
   };
 
   if (loading) {
@@ -61,7 +70,7 @@ function MainApp() {
             <div className="absolute top-2 right-4 z-20">
               <ThemeToggle />
             </div>
-            <LoginRegister onAuthSuccess={() => {}} />
+            <LoginRegister onAuthSuccess={handleAuthSuccess} />
           </div>
         ) : (
           <div className="flex-1">
