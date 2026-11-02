@@ -97,6 +97,18 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
     }
   };
 
+  // Sanitize section value to match DB format
+  const sanitizeSection = (section: ExerciseSection): string => {
+    const sectionMap: Record<ExerciseSection, string> = {
+      'Warmup': 'warmup',
+      'Joint Preparation': 'joint_prep',
+      'Static Exercises': 'static',
+      'Dynamic Exercises': 'dynamic',
+      'Stretching': 'stretching',
+    };
+    return sectionMap[section] || section.toLowerCase().replace(/\s+/g, '_');
+  };
+
   // Admin: Add Exercise directly
   const handleAddExercise = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,23 +117,32 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
     setFormError(null);
 
     try {
+      const sanitizedSection = sanitizeSection(section);
+      console.log('Adding exercise:', { name: name.trim(), section: sanitizedSection, metric_type: metricType });
+      
       const { data, error } = await supabase
         .from('exercises')
         .insert({
           name: name.trim(),
-          section,
+          section: sanitizedSection,
           metric_type: metricType,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Add exercise error:', error);
+        setFormError(error.message);
+        return;
+      }
 
+      console.log('Exercise added successfully:', data);
       setExercises(prev => [...prev, data]);
       setName('');
       setShowAddModal(false);
       showToast(`Added "${data.name}" to catalog!`);
     } catch (err: unknown) {
+      console.error('Add exercise exception:', err);
       if (err instanceof Error) {
         setFormError(err.message);
       } else {

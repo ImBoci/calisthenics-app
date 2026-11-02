@@ -58,9 +58,14 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
         .select('*')
         .order('name', { ascending: true });
 
-      console.log('Fetched exercises:', data, error);
+      console.log('Modal loaded exercises:', data, error);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching exercises for modal:', error);
+        throw error;
+      }
+      
+      console.log(`Successfully loaded ${data?.length || 0} exercises for modal`);
       setCatalogExercises(data || []);
       return data || [];
     } catch (err) {

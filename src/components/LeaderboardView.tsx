@@ -53,28 +53,28 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       if (exErr) throw exErr;
       setExercises(exData || []);
 
-      // 2. Fetch all user PBs with joined exercises
+      // 2. Fetch all user PBs with joined exercises and profiles
       const { data: pbData, error: pbErr } = await supabase
         .from('user_pbs')
-        .select('*, exercises(*)')
+        .select('*, exercises(*), profiles(*)')
         .order('best_value', { ascending: false });
+
+      console.log('Leaderboard PBs:', pbData, pbErr);
 
       if (pbErr) throw pbErr;
       setAllPbs(pbData || []);
 
-      // 3. Fetch profiles separately and combine
-      const { data: profData, error: profErr } = await supabase
-        .from('profiles')
-        .select('id, display_name, username, avatar_url');
-
-      if (!profErr && profData) {
+      // 3. Build profile map from joined data
+      if (pbData) {
         const map: Record<string, { display_name: string; username: string; avatar_url?: string }> = {};
-        profData.forEach(p => {
-          map[p.id] = { 
-            display_name: p.display_name, 
-            username: p.username,
-            avatar_url: p.avatar_url
-          };
+        pbData.forEach(pb => {
+          if (pb.profiles && !map[pb.user_id]) {
+            map[pb.user_id] = { 
+              display_name: pb.profiles.display_name, 
+              username: pb.profiles.username,
+              avatar_url: pb.profiles.avatar_url
+            };
+          }
         });
         setProfileMap(map);
       }

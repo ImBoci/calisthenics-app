@@ -106,6 +106,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
     setSaving(true);
     setFeedbackMsg(null);
     try {
+      console.log('Updating profile for user:', profile.id);
       const updates = {
         id: profile.id,
         display_name: displayName.trim(),
@@ -114,18 +115,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .upsert(updates);
+        .upsert(updates)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        alert('Save error: ' + error.message);
+        setFeedbackMsg('Save error: ' + error.message);
+        return;
+      }
 
+      console.log('Profile saved successfully:', data);
       setProfile(prev => prev ? { ...prev, ...updates } : null);
       setEditing(false);
       setFeedbackMsg('Profile updated!');
       setTimeout(() => setFeedbackMsg(null), 2500);
     } catch (err: unknown) {
       if (err instanceof Error) {
+        console.error('Profile save exception:', err);
         setFeedbackMsg(`Save error: ${err.message}`);
       }
     } finally {
