@@ -22,6 +22,9 @@ interface LeaderboardViewProps {
 interface RankedPB extends UserPB {
   display_name: string;
   isCurrentUser: boolean;
+  exercise_name?: string;
+  exercise_metric_type?: string;
+  exercise_section?: string;
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, onNavigateToPBs }) => {
@@ -49,30 +52,27 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       if (exErr) throw exErr;
       setExercises(exData || []);
 
-      // 2. Fetch all user PBs across all squad members
+      // 2. Fetch all user PBs with joined profiles and exercises
       const { data: pbData, error: pbErr } = await supabase
         .from('user_pbs')
-        .select('*')
+        .select('*, profiles(username, display_name), exercises(name, metric_type, section)')
         .order('best_value', { ascending: false });
 
       if (pbErr) throw pbErr;
       setAllPbs(pbData || []);
 
-      // 3. Fetch user profiles for display names
-      try {
-        const { data: profData, error: profErr } = await supabase
-          .from('profiles')
-          .select('id, display_name, username');
-
-        if (!profErr && profData) {
-          const map: Record<string, { display_name: string; username: string }> = {};
-          profData.forEach(p => {
-            map[p.id] = { display_name: p.display_name, username: p.username };
-          });
-          setProfileMap(map);
-        }
-      } catch {
-        // Profiles table might not be populated or cached yet
+      // 3. Build profile map from joined data
+      if (pbData) {
+        const map: Record<string, { display_name: string; username: string }> = {};
+        pbData.forEach(pb => {
+          if (pb.profiles && !map[pb.user_id]) {
+            map[pb.user_id] = { 
+              display_name: pb.profiles.display_name, 
+              username: pb.profiles.username 
+            };
+          }
+        });
+        setProfileMap(map);
       }
     } catch (err) {
       console.error('Error loading leaderboard:', err);
@@ -100,10 +100,19 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       displayName = `@${profile.username}`;
     }
 
+    // Extract exercise info from joined data or fallback to exercises array
+    const exercise = exercises.find(e => e.id === pb.exercise_id);
+    const exerciseName = (pb as any).exercises?.name || exercise?.name;
+    const exerciseMetric = (pb as any).exercises?.metric_type || exercise?.metric_type;
+    const exerciseSection = (pb as any).exercises?.section || exercise?.section;
+
     pbsByExercise[pb.exercise_id].push({
       ...pb,
       display_name: displayName,
       isCurrentUser: isCurrent,
+      exercise_name: exerciseName,
+      exercise_metric_type: exerciseMetric,
+      exercise_section: exerciseSection,
     });
   });
 
@@ -125,7 +134,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   );
 
   const filteredExercises = competitiveExercises.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || ex.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSection = selectedSection === 'All' || ex.section === selectedSection;
     const matchesExercise = selectedExercise === 'All' || ex.id === selectedExercise;
     return matchesSearch && matchesSection && matchesExercise;
@@ -230,6 +239,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           {/* Active Competitions (Exercises with PBs) */}
           {exercisesWithRecords.map(ex => {
             const rankings = pbsByExercise[ex.id] || [];
+            const firstRanking = rankings[0];
+            const exerciseName = firstRanking?.exercise_name || ex.name;
+            const exerciseMetric = firstRanking?.exercise_metric_type || ex.metric_type;
+            const exerciseSection = firstRanking?.exercise_section || ex.section;
+            
             return (
               <div
                 key={ex.id}
@@ -240,10 +254,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                   <div>
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted">
-                        {ex.section}
+                        {exerciseSection}
                       </span>
                       <span className="text-[10px] font-mono text-retro-day-textMuted dark:text-retro-night-textMuted flex items-center gap-1">
-                        {ex.metric_type === 'time' ? (
+                        {exerciseMetric === 'time' ? (
                           <>
                             <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                             Hold (s)
@@ -257,7 +271,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                       </span>
                     </div>
                     <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text font-sans">
-                      {ex.name}
+                      {exerciseName}
                     </h3>
                   </div>
 
@@ -323,7 +337,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                         {/* PB Score */}
                         <div className="text-right shrink-0">
                           <span className="text-sm font-extrabold font-mono text-retro-day-text dark:text-retro-night-text block">
-                            {rank.best_value} {ex.metric_type === 'time' ? 's' : 'reps'}
+                            {rank.best_value} {rank.exercise_metric_type === 'time' ? 's' : 'reps'}
                           </span>
                         </div>
                       </div>

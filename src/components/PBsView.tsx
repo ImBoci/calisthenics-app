@@ -213,7 +213,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
       {/* Section Filter Pills */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none text-xs">
-        {['All', ...SECTIONS].map(sec => {
+        {['All', 'Static Exercises', 'Dynamic Exercises'].map(sec => {
           const isSelected = selectedSection === sec;
           return (
             <button
