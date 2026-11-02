@@ -12,7 +12,8 @@ import {
   ChevronRight, 
   RotateCcw,
   Layers,
-  ArrowLeft
+  ArrowLeft,
+  Sparkles
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
@@ -25,6 +26,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [catalogExercises, setCatalogExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
 
   // Active viewing/training routine
   const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null);
@@ -49,18 +51,27 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const fetchCatalogExercises = async () => {
     try {
-      // 1. Fetch catalog exercises
-      const { data: exData, error: exErr } = await supabase
+      const { data, error } = await supabase
         .from('exercises')
         .select('*')
         .order('name', { ascending: true });
 
-      if (exErr) throw exErr;
-      const allExercises = exData || [];
-      setCatalogExercises(allExercises);
+      if (error) throw error;
+      setCatalogExercises(data || []);
+      return data || [];
+    } catch (err) {
+      console.error('Error fetching exercises:', err);
+      return [];
+    }
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // 1. Fetch catalog exercises (unfiltered)
+      const allExercises = await fetchCatalogExercises();
 
       const exerciseMap: Record<string, Exercise> = {};
       allExercises.forEach(ex => {
@@ -115,12 +126,57 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     }
   };
 
+  const openBuilder = async () => {
+    setBuilderError(null);
+    setShowBuilder(true);
+    await fetchCatalogExercises();
+  };
+
   const toggleSelectExercise = (exerciseId: string) => {
     setSelectedExerciseIds(prev => 
       prev.includes(exerciseId)
         ? prev.filter(id => id !== exerciseId)
         : [...prev, exerciseId]
     );
+  };
+
+  // Seed default moves right inside the builder if catalog is empty
+  const handleSeedDefaults = async () => {
+    setSeeding(true);
+    const defaults = [
+      { name: 'Jumping Jacks', section: 'Warmup', metric_type: 'time' },
+      { name: 'Arm Circles & Crosses', section: 'Warmup', metric_type: 'time' },
+      { name: 'Wrist Rotations & Flexions', section: 'Joint Preparation', metric_type: 'time' },
+      { name: 'Shoulder Dislocates', section: 'Joint Preparation', metric_type: 'reps' },
+      { name: 'Scapular Pull-ups', section: 'Joint Preparation', metric_type: 'reps' },
+      { name: 'Handstand Hold (Wall/Chest)', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Planche Lean', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Dead Hang', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Pull-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Dips (Parallel Bars)', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Pike Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Muscle-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Shoulder Bridge Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Pike Hamstring Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Cobra Chest Stretch', section: 'Stretching', metric_type: 'time' },
+    ];
+
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert(defaults)
+        .select();
+
+      if (error) throw error;
+      setCatalogExercises(data || []);
+      showToast(`Loaded ${data?.length || 0} moves into catalog!`);
+    } catch (err) {
+      console.error('Error seeding moves:', err);
+    } finally {
+      setSeeding(false);
+    }
   };
 
   const handleCreatePlan = async (e: React.FormEvent) => {
@@ -147,7 +203,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
       if (planError) throw planError;
 
-      // 2. Sort selected exercises by their 5-section sequence (Warmup -> Joint Prep -> Static -> Dynamic -> Stretching)
+      // 2. Sort selected exercises by 5-section sequence (Warmup -> Joint Prep -> Static -> Dynamic -> Stretching)
       const sectionOrder: Record<string, number> = {
         'Warmup': 1,
         'Joint Preparation': 2,
@@ -299,7 +355,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
           {/* Routine Title Banner */}
           <div className="p-4 rounded-3xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border shadow-sm">
             <span className="text-[10px] uppercase font-bold tracking-widest text-retro-day-accent dark:text-retro-night-accent">
-              Active Session Routine
+              Active Routine Checklist
             </span>
             <h3 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
               {activePlan.title}
@@ -412,22 +468,15 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
             <div>
               <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
                 <Dumbbell className="w-3.5 h-3.5" />
-                Stage 2 Workouts
+                Workout Routines
               </span>
               <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-                Custom Routines
+                Custom Plans
               </h2>
             </div>
 
             <button
-              onClick={() => {
-                if (catalogExercises.length === 0) {
-                  onNavigateToCatalog();
-                  return;
-                }
-                setBuilderError(null);
-                setShowBuilder(true);
-              }}
+              onClick={openBuilder}
               className="px-3.5 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
             >
               <Plus className="w-4 h-4" />
@@ -449,16 +498,10 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                 Build your first routine organized into Warmup, Joint Prep, Static, Dynamic, and Stretching!
               </p>
               <button
-                onClick={() => {
-                  if (catalogExercises.length === 0) {
-                    onNavigateToCatalog();
-                  } else {
-                    setShowBuilder(true);
-                  }
-                }}
+                onClick={openBuilder}
                 className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow-md"
               >
-                {catalogExercises.length === 0 ? 'Seed Catalog First' : '+ Build Custom Routine'}
+                + Build Custom Routine
               </button>
             </div>
           ) : (
@@ -501,7 +544,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       {/* ========================================================================= */}
       {showBuilder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md max-h-[85vh] bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl flex flex-col">
+          <div className="w-full max-w-md max-h-[85vh] bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-retro-day-border dark:border-retro-night-border">
               <div className="flex items-center gap-2">
                 <Dumbbell className="w-5 h-5 text-retro-day-accent dark:text-retro-night-accent" />
@@ -542,51 +585,75 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               {/* Select Exercises header */}
               <div className="flex items-center justify-between text-xs font-bold text-retro-day-textMuted dark:text-retro-night-textMuted mb-2">
                 <span className="uppercase tracking-wider">Select Exercises ({selectedExerciseIds.length})</span>
-                <span className="text-[11px] font-normal italic">Grouped by sections</span>
+                <span className="text-[11px] font-normal italic">Grouped by 5 sections</span>
               </div>
 
-              {/* Scrollable multi-select categorized by 5 sections */}
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                {SECTIONS.map((sec, idx) => {
-                  const moves = catalogExercises.filter(ex => ex.section === sec);
-                  if (moves.length === 0) return null;
+              {/* If catalog is empty inside builder modal */}
+              {catalogExercises.length === 0 ? (
+                <div className="p-6 text-center bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-2xl border border-retro-day-border dark:border-retro-night-border my-auto">
+                  <Sparkles className="w-8 h-8 mx-auto mb-2 text-retro-day-accent dark:text-retro-night-accent" />
+                  <p className="text-xs font-bold text-retro-day-text dark:text-retro-night-text mb-1">
+                    No exercises in catalog yet
+                  </p>
+                  <p className="text-[11px] text-retro-day-textMuted dark:text-retro-night-textMuted mb-3">
+                    Load starter calisthenics moves now or add custom ones in the Catalog tab.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSeedDefaults}
+                    disabled={seeding}
+                    className="w-full py-2.5 px-4 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
+                  >
+                    {seeding ? 'Loading moves...' : '⚡ Load Starter Calisthenics Moves'}
+                  </button>
+                </div>
+              ) : (
+                /* Scrollable multi-select categorized by 5 sections */
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                  {SECTIONS.map((sec, idx) => {
+                    const moves = catalogExercises.filter(ex => ex.section === sec);
+                    if (moves.length === 0) return null;
 
-                  return (
-                    <div key={sec} className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80">
-                      <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-retro-day-text dark:text-retro-night-text uppercase tracking-wider">
-                        <span className="w-4 h-4 rounded-full bg-retro-day-accent text-white text-[10px] font-mono flex items-center justify-center">
-                          {idx + 1}
-                        </span>
-                        <span>{sec}</span>
-                      </div>
+                    return (
+                      <div key={sec} className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80">
+                        <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-retro-day-text dark:text-retro-night-text uppercase tracking-wider">
+                          <span className="w-4 h-4 rounded-full bg-retro-day-accent text-white text-[10px] font-mono flex items-center justify-center">
+                            {idx + 1}
+                          </span>
+                          <span>{sec}</span>
+                          <span className="ml-auto text-[10px] text-retro-day-textMuted font-mono">
+                            {moves.filter(m => selectedExerciseIds.includes(m.id)).length}/{moves.length}
+                          </span>
+                        </div>
 
-                      <div className="space-y-1.5">
-                        {moves.map(m => {
-                          const isSelected = selectedExerciseIds.includes(m.id);
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => toggleSelectExercise(m.id)}
-                              className={`w-full text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all min-h-[44px] ${
-                                isSelected
-                                  ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
-                                  : 'bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-text dark:text-retro-night-text border-retro-day-border dark:border-retro-night-border'
-                              }`}
-                            >
-                              <span className="truncate pr-2">{m.name}</span>
-                              <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono opacity-80">
-                                {m.metric_type === 'time' ? <Clock className="w-3 h-3" /> : <Repeat className="w-3 h-3" />}
-                                {isSelected && <Check className="w-3.5 h-3.5 ml-1 stroke-[3]" />}
-                              </div>
-                            </button>
-                          );
-                        })}
+                        <div className="space-y-1.5">
+                          {moves.map(m => {
+                            const isSelected = selectedExerciseIds.includes(m.id);
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => toggleSelectExercise(m.id)}
+                                className={`w-full text-left p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all min-h-[44px] touch-manipulation active:scale-[0.99] ${
+                                  isSelected
+                                    ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                                    : 'bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-text dark:text-retro-night-text border-retro-day-border dark:border-retro-night-border'
+                                }`}
+                              >
+                                <span className="truncate pr-2">{m.name}</span>
+                                <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono opacity-80">
+                                  {m.metric_type === 'time' ? <Clock className="w-3 h-3" /> : <Repeat className="w-3 h-3" />}
+                                  {isSelected && <Check className="w-3.5 h-3.5 ml-1 stroke-[3]" />}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-3 border-t border-retro-day-border dark:border-retro-night-border mt-3">
@@ -599,7 +666,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                 </button>
                 <button
                   type="submit"
-                  disabled={savingPlan}
+                  disabled={savingPlan || catalogExercises.length === 0}
                   className="flex-1 py-3 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
                 >
                   {savingPlan ? 'Saving...' : `Save Routine (${selectedExerciseIds.length})`}

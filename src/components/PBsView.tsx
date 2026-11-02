@@ -181,7 +181,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
         <div>
           <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
             <Trophy className="w-3.5 h-3.5" />
-            Stage 2 Records
+            Personal Records
           </span>
           <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
             Personal Bests
@@ -479,3 +479,4 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
     </div>
   );
 };
+

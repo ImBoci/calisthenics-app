@@ -277,7 +277,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
         <div>
           <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
             <BookOpen className="w-3.5 h-3.5" />
-            Stage 2 Catalog
+            Exercise Library
           </span>
           <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
             Exercise Vault
@@ -788,3 +788,4 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
     </div>
   );
 };
+

@@ -135,10 +135,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
       {/* Athlete Card Header */}
       <div className="mb-4">
         <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent">
-          Stage 1 Squad
+          Squad Athlete
         </span>
         <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-          Athlete Card
+          My Profile
         </h2>
       </div>
 
@@ -271,14 +271,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
         </div>
       </div>
 
-      {/* Stage Roadmap Peek */}
+      {/* Squad Card Footnote */}
       <div className="mt-5 p-4 rounded-2xl bg-retro-day-cardAlt/80 dark:bg-retro-night-cardAlt/60 border border-retro-day-border dark:border-retro-night-border">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-2">
           <UserCircle2 className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
-          <span>Stage 2 & 3 Roadmap</span>
+          <span>Squad Brotherhood</span>
         </div>
         <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted leading-relaxed">
-          Your profile schema is linked and ready for Workout Logs, Daily Calisthenics Streaks, and 3-Player Squad Leaderboard Points!
+          Log your personal bests, build custom workout plans, and compare progress with your friends on the squad leaderboard.
         </p>
       </div>
 
