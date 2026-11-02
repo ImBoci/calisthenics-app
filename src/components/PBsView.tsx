@@ -27,6 +27,13 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<string>('All');
 
+  // Map display labels to DB section values
+  const SECTION_MAP: Record<string, string> = {
+    'All': 'All',
+    'Static Exercises': 'Static Exercises',
+    'Dynamic Exercises': 'Dynamic Exercises',
+  };
+
   // Modal State
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [bestValue, setBestValue] = useState<string>('');
@@ -159,7 +166,8 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
   // Filter exercises
   const filtered = exercises.filter(ex => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSection = selectedSection === 'All' || ex.section === selectedSection;
+    const dbSectionValue = SECTION_MAP[selectedSection] || selectedSection;
+    const matchesSection = selectedSection === 'All' || ex.section === dbSectionValue;
     return matchesSearch && matchesSection;
   });
 

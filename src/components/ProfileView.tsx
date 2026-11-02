@@ -100,7 +100,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!profile) return;
     setSaving(true);
     setFeedbackMsg(null);
@@ -412,9 +413,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
             Joined {formattedDate}
           </span>
           <button
-            onClick={() => {
+            type="button"
+            onClick={(e) => {
               if (editing) {
-                handleSave();
+                handleSave(e);
               } else {
                 setEditing(true);
               }
