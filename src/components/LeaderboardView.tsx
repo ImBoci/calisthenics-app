@@ -31,6 +31,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<string>('All');
+  const [selectedExercise, setSelectedExercise] = useState<string>('All');
 
   useEffect(() => {
     loadLeaderboardData();
@@ -118,10 +119,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
     });
   });
 
-  const filteredExercises = exercises.filter(ex => {
+  // Filter to only competitive exercises (static and dynamic)
+  const competitiveExercises = exercises.filter(ex => 
+    ex.section === 'Static Exercises' || ex.section === 'Dynamic Exercises'
+  );
+
+  const filteredExercises = competitiveExercises.filter(ex => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSection = selectedSection === 'All' || ex.section === selectedSection;
-    return matchesSearch && matchesSection;
+    const matchesExercise = selectedExercise === 'All' || ex.id === selectedExercise;
+    return matchesSearch && matchesSection && matchesExercise;
   });
 
   // Separate exercises with records vs exercises without
@@ -131,17 +138,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   return (
     <div className="w-full max-w-md mx-auto pt-2 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
-            <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-            Squad Scoreboard
-          </span>
-          <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-            Leaderboard
-          </h2>
-        </div>
-
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
+          <Crown className="w-5 h-5 text-amber-500 fill-amber-500" />
+          Leaderboard
+        </h2>
         <button
           onClick={onNavigateToPBs}
           className="px-3 py-1.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
@@ -171,9 +172,23 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         )}
       </div>
 
+      {/* Exercise Filter Dropdown */}
+      <div className="mb-3">
+        <select
+          value={selectedExercise}
+          onChange={e => setSelectedExercise(e.target.value)}
+          className="w-full px-3 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-sm font-bold focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+        >
+          <option value="All">All Competitive Exercises</option>
+          {competitiveExercises.map(ex => (
+            <option key={ex.id} value={ex.id}>{ex.name}</option>
+          ))}
+        </select>
+      </div>
+
       {/* Section Filter Pills */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none text-xs">
-        {['All', ...SECTIONS].map(sec => {
+        {['All', 'Static Exercises', 'Dynamic Exercises'].map(sec => {
           const isSelected = selectedSection === sec;
           return (
             <button

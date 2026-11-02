@@ -177,17 +177,11 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
       )}
 
       {/* Top Header Card */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
-            <Trophy className="w-3.5 h-3.5" />
-            Personal Records
-          </span>
-          <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-            Personal Bests
-          </h2>
-        </div>
-
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
+          <Trophy className="w-5 h-5" />
+          Personal Bests
+        </h2>
         {/* Total PBs Badge */}
         <div className="px-3 py-1.5 rounded-2xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border flex items-center gap-1.5 shadow-sm">
           <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
@@ -273,16 +267,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80 text-retro-day-textMuted dark:text-retro-night-textMuted">
-                      {ex.section}
-                    </span>
-                    <span className="text-[10px] font-mono text-retro-day-textMuted dark:text-retro-night-textMuted">
-                      {ex.metric_type === 'time' ? 'Hold' : 'Reps'}
-                    </span>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text truncate font-sans">
+                  <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text truncate font-sans mb-1">
                     {ex.name}
                   </h4>
 

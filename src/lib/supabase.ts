@@ -94,3 +94,16 @@ export interface WorkoutPlan {
   created_at: string;
   items?: WorkoutPlanItem[];
 }
+
+export interface WorkoutLog {
+  id: string;
+  user_id: string;
+  completed_at: string;
+  plan_id?: string;
+}
+
+/** Competitive sections shown on the Leaderboard */
+export const COMPETITIVE_SECTIONS: ExerciseSection[] = [
+  'Static Exercises',
+  'Dynamic Exercises',
+];

@@ -6,6 +6,7 @@ import { BottomNav, NavTab } from './components/BottomNav';
 import { CatalogView } from './components/CatalogView';
 import { PBsView } from './components/PBsView';
 import { WorkoutsView } from './components/WorkoutsView';
+import { LeaderboardView } from './components/LeaderboardView';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ThemeProvider } from './context/ThemeContext';
 import { Session } from '@supabase/supabase-js';
@@ -113,6 +114,13 @@ function MainApp() {
                 />
               )}
 
+              {currentTab === 'leaderboard' && (
+                <LeaderboardView
+                  currentUser={session.user}
+                  onNavigateToPBs={() => setCurrentTab('pbs')}
+                />
+              )}
+
               {currentTab === 'pbs' && (
                 <PBsView currentUser={session.user} />
               )}
@@ -125,7 +133,7 @@ function MainApp() {
               )}
 
               {currentTab === 'profile' && (
-                <ProfileView onLogout={handleLogout} />
+                <ProfileView onLogout={handleLogout} currentUser={session.user} />
               )}
 
               <BottomNav 

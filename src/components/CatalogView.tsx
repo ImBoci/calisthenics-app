@@ -273,17 +273,11 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       )}
 
       {/* Header Bar */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
-            <BookOpen className="w-3.5 h-3.5" />
-            Exercise Library
-          </span>
-          <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-            Exercise Vault
-          </h2>
-        </div>
-
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
+          <BookOpen className="w-5 h-5" />
+          Exercise Catalog
+        </h2>
         {/* Action Button: Admin Add vs Friend Suggest */}
         <div className="flex items-center gap-2">
           {isAdmin ? (

@@ -8,12 +8,12 @@ import {
   X, 
   Clock, 
   Repeat, 
-  Calendar, 
   ChevronRight, 
   RotateCcw,
   Layers,
   ArrowLeft,
-  Sparkles
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
@@ -57,6 +57,8 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
         .from('exercises')
         .select('*')
         .order('name', { ascending: true });
+
+      console.log('Fetched exercises:', data, error);
 
       if (error) throw error;
       setCatalogExercises(data || []);
@@ -128,6 +130,8 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
   const openBuilder = async () => {
     setBuilderError(null);
+    setSelectedExerciseIds([]);
+    setNewTitle('');
     setShowBuilder(true);
     await fetchCatalogExercises();
   };
@@ -191,7 +195,6 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     setBuilderError(null);
 
     try {
-      // 1. Insert workout_plan
       const { data: plan, error: planError } = await supabase
         .from('workout_plans')
         .insert({
@@ -203,7 +206,6 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
       if (planError) throw planError;
 
-      // 2. Sort selected exercises by 5-section sequence (Warmup -> Joint Prep -> Static -> Dynamic -> Stretching)
       const sectionOrder: Record<string, number> = {
         'Warmup': 1,
         'Joint Preparation': 2,
@@ -220,7 +222,6 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
         return orderA - orderB;
       });
 
-      // 3. Insert items
       const planItems = sortedExerciseIds.map((exId, idx) => ({
         plan_id: plan.id,
         exercise_id: exId,
@@ -284,6 +285,25 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     }
   };
 
+  const handleMarkCompleted = async (planId: string) => {
+    if (!currentUser) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('workout_logs')
+        .insert({
+          user_id: currentUser.id,
+          completed_at: today,
+          plan_id: planId,
+        });
+      if (error) throw error;
+      showToast('Workout logged! 💪');
+    } catch (err) {
+      console.error('Error logging workout:', err);
+      showToast('Could not log workout');
+    }
+  };
+
   const toggleCheckExercise = (id: string) => {
     setCheckedExerciseIds(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -292,7 +312,6 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     setCheckedExerciseIds({});
   };
 
-  // Group active plan exercises by section
   const groupPlanItemsBySection = (plan: WorkoutPlan) => {
     const grouped: Record<ExerciseSection, Exercise[]> = {
       'Warmup': [],
@@ -354,9 +373,6 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
           {/* Routine Title Banner */}
           <div className="p-4 rounded-3xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border shadow-sm">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-retro-day-accent dark:text-retro-night-accent">
-              Active Routine Checklist
-            </span>
             <h3 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
               {activePlan.title}
             </h3>
@@ -372,7 +388,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                     <div>
                       <div className="flex justify-between text-xs font-mono font-bold text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
                         <span>Progress</span>
-                        <span>{completed}/{total} Completed ({pct}%)</span>
+                        <span>{completed}/{total} ({pct}%)</span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt overflow-hidden border border-retro-day-border/50">
                         <div 
@@ -386,6 +402,15 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               </div>
             )}
           </div>
+
+          {/* Mark Completed Button */}
+          <button
+            onClick={() => handleMarkCompleted(activePlan.id)}
+            className="w-full py-3 rounded-2xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            Mark as Completed
+          </button>
 
           {/* Grouped Checklist */}
           {(() => {
@@ -463,26 +488,11 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       ) : (
         /* VIEW 2: ROUTINES LIST & BUILD BUTTON */
         <div>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
-                <Dumbbell className="w-3.5 h-3.5" />
-                Workout Routines
-              </span>
-              <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-                Custom Plans
-              </h2>
-            </div>
-
-            <button
-              onClick={openBuilder}
-              className="px-3.5 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              New Routine
-            </button>
-          </div>
+          {/* Centered green header */}
+          <h2 className="text-center text-lg font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent mb-4 flex items-center justify-center gap-2">
+            <Dumbbell className="w-5 h-5" />
+            Workout Routines
+          </h2>
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
@@ -506,31 +516,44 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
             </div>
           ) : (
             <div className="space-y-3">
+              {/* New Routine button */}
+              <button
+                onClick={openBuilder}
+                className="w-full py-3 rounded-2xl border-2 border-dashed border-retro-day-accent/40 dark:border-retro-night-accent/40 text-retro-day-accent dark:text-retro-night-accent text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all hover:bg-retro-day-accentSoft/30 dark:hover:bg-retro-night-accentSoft/20"
+              >
+                <Plus className="w-4 h-4" />
+                New Routine
+              </button>
+
               {plans.map(plan => {
                 const count = plan.items?.length || 0;
                 return (
                   <div
                     key={plan.id}
-                    onClick={() => setActivePlan(plan)}
-                    className="p-4 rounded-3xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border shadow-sm hover:border-retro-day-accent cursor-pointer transition-all active:scale-[0.99] flex items-center justify-between gap-3"
+                    className="p-4 rounded-3xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border shadow-sm hover:border-retro-day-accent cursor-pointer transition-all active:scale-[0.99]"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-retro-day-accent dark:text-retro-night-accent uppercase tracking-wider mb-1">
-                        <Calendar className="w-3 h-3" />
-                        <span>Squad Routine</span>
+                    <div className="flex items-center justify-between gap-3" onClick={() => setActivePlan(plan)}>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base font-bold text-retro-day-text dark:text-retro-night-text truncate">
+                          {plan.title}
+                        </h4>
+                        <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mt-1">
+                          {count} exercises • 5 sections
+                        </p>
                       </div>
-                      <h4 className="text-base font-bold text-retro-day-text dark:text-retro-night-text truncate">
-                        {plan.title}
-                      </h4>
-                      <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mt-1">
-                        {count} exercises organized by 5 sections
-                      </p>
+                      <div className="flex items-center gap-1 text-retro-day-accent dark:text-retro-night-accent font-bold text-xs">
+                        <span>Start</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-1 text-retro-day-accent dark:text-retro-night-accent font-bold text-xs">
-                      <span>Start</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
+                    {/* Mark Completed inline */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleMarkCompleted(plan.id); }}
+                      className="mt-2 w-full py-2 rounded-xl bg-retro-day-accentSoft dark:bg-retro-night-accentSoft text-retro-day-accent dark:text-retro-night-accent text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-retro-day-accent/20 dark:border-retro-night-accent/20"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Mark as Completed
+                    </button>
                   </div>
                 );
               })}

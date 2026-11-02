@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, Profile } from '../lib/supabase';
+import { User } from '@supabase/supabase-js';
 import { 
   LogOut, 
   Dumbbell, 
   Award, 
-  Calendar, 
+  Calendar as CalendarIcon, 
   Flame, 
   Check, 
   Pencil, 
-  UserCircle2 
+  UserCircle2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface ProfileViewProps {
   onLogout: () => void;
+  currentUser?: User | null;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [workoutDates, setWorkoutDates] = useState<string[]>([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [checkingIn, setCheckingIn] = useState(false);
 
   // Editable fields
   const [displayName, setDisplayName] = useState('');
@@ -29,7 +36,23 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+    fetchWorkoutDates();
+  }, [currentUser]);
+
+  const fetchWorkoutDates = async () => {
+    if (!currentUser) return;
+    try {
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('completed_at')
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+      const dates = (data || []).map(log => log.completed_at);
+      setWorkoutDates(dates);
+    } catch (err) {
+      console.error('Error fetching workout dates:', err);
+    }
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -115,6 +138,64 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
       .slice(0, 2);
   };
 
+  const handleCheckIn = async () => {
+    if (!currentUser) return;
+    setCheckingIn(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('workout_logs')
+        .insert({
+          user_id: currentUser.id,
+          completed_at: today,
+        });
+      if (error) throw error;
+      setFeedbackMsg('Workout checked in! 💪');
+      await fetchWorkoutDates();
+      setTimeout(() => setFeedbackMsg(null), 2500);
+    } catch (err) {
+      console.error('Error checking in workout:', err);
+      setFeedbackMsg('Could not check in workout');
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
+  const getCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    const days = [];
+    for (let i = 0; i < startDay; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= totalDays; i++) {
+      days.push(i);
+    }
+    return days;
+  };
+
+  const isWorkoutDay = (day: number) => {
+    const dateStr = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+      .toISOString()
+      .split('T')[0];
+    return workoutDates.includes(dateStr);
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    return day === today.getDate() && 
+           currentMonth.getMonth() === today.getMonth() && 
+           currentMonth.getFullYear() === today.getFullYear();
+  };
+
+  const navigateMonth = (direction: number) => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + direction, 1));
+  };
+
   const formattedDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, {
         month: 'short',
@@ -134,11 +215,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
     <div className="w-full max-w-md mx-auto pt-2 pb-6">
       {/* Athlete Card Header */}
       <div className="mb-4">
-        <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent">
-          Squad Athlete
-        </span>
-        <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
-          My Profile
+        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex items-center justify-center gap-2">
+          <UserCircle2 className="w-5 h-5" />
+          Profile
         </h2>
       </div>
 
@@ -244,7 +323,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
         {/* Member Since Footnote */}
         <div className="mt-4 flex items-center justify-between text-xs text-retro-day-textMuted dark:text-retro-night-textMuted">
           <span className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
+            <CalendarIcon className="w-3.5 h-3.5" />
             Joined {formattedDate}
           </span>
           <button
@@ -269,6 +348,77 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout }) => {
             )}
           </button>
         </div>
+      </div>
+
+      {/* Workout Activity Calendar */}
+      <div className="mt-5 p-4 rounded-3xl bg-retro-day-card dark:bg-retro-night-card border-2 border-retro-day-border dark:border-retro-night-border shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="w-5 h-5 text-retro-day-accent dark:text-retro-night-accent" />
+            <h3 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text uppercase tracking-wide">
+              Activity Calendar
+            </h3>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigateMonth(-1)}
+              className="p-1.5 rounded-lg bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text hover:border-retro-day-accent active:scale-95 transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text min-w-[100px] text-center">
+              {currentMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            </span>
+            <button
+              onClick={() => navigateMonth(1)}
+              className="p-1.5 rounded-lg bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text hover:border-retro-day-accent active:scale-95 transition-all"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+            <div key={day} className="text-center text-[10px] font-bold text-retro-day-textMuted dark:text-retro-night-textMuted uppercase">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {getCalendarDays().map((day, idx) => {
+            if (day === null) {
+              return <div key={idx} className="aspect-square" />;
+            }
+            const hasWorkout = isWorkoutDay(day);
+            const today = isToday(day);
+            return (
+              <div
+                key={idx}
+                className={`aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
+                  hasWorkout
+                    ? 'bg-retro-day-accent dark:bg-retro-night-accent text-white'
+                    : today
+                    ? 'bg-retro-day-accentSoft/50 dark:bg-retro-night-accentSoft/30 text-retro-day-text dark:text-retro-night-text border border-retro-day-accent/30'
+                    : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted'
+                }`}
+              >
+                {day}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Check-in Button */}
+        <button
+          onClick={handleCheckIn}
+          disabled={checkingIn || isToday(new Date().getDate()) && workoutDates.includes(new Date().toISOString().split('T')[0])}
+          className="mt-3 w-full py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
+        >
+          <Check className="w-4 h-4" />
+          {checkingIn ? 'Checking in...' : 'Check-in Today\'s Workout'}
+        </button>
       </div>
 
       {/* Squad Card Footnote */}

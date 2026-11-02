@@ -1,7 +1,7 @@
 import React from 'react';
-import { User, Dumbbell, Trophy, BookOpen } from 'lucide-react';
+import { User, Dumbbell, Trophy, BookOpen, Crown } from 'lucide-react';
 
-export type NavTab = 'workouts' | 'pbs' | 'catalog' | 'profile';
+export type NavTab = 'workouts' | 'leaderboard' | 'pbs' | 'catalog' | 'profile';
 
 interface BottomNavProps {
   currentTab: NavTab;
@@ -12,6 +12,7 @@ interface BottomNavProps {
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange, suggestionCount = 0 }) => {
   const tabs = [
     { id: 'workouts' as NavTab, label: 'Workouts', icon: Dumbbell },
+    { id: 'leaderboard' as NavTab, label: 'Board', icon: Crown },
     { id: 'pbs' as NavTab, label: 'PBs', icon: Trophy },
     { id: 'catalog' as NavTab, label: 'Catalog', icon: BookOpen, badge: suggestionCount },
     { id: 'profile' as NavTab, label: 'Profile', icon: User },
