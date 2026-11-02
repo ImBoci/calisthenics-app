@@ -22,7 +22,7 @@ interface WorkoutsViewProps {
   onNavigateToCatalog: () => void;
 }
 
-export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavigateToCatalog }) => {
+export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavigateToCatalog: _onNavigateToCatalog }) => {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [catalogExercises, setCatalogExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);

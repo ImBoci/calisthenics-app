@@ -8,8 +8,6 @@ import {
   Search, 
   Clock, 
   Repeat, 
-  User as UserIcon, 
-  Sparkles, 
   ShieldCheck, 
   X,
   Plus
