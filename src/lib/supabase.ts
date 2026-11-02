@@ -23,6 +23,19 @@ export const supabase = createClient(
   supabaseKey || 'placeholder-key'
 );
 
+export const ADMIN_EMAIL = 'vargadaniel001@gmail.com';
+
+export const SECTIONS = [
+  'Warmup',
+  'Joint Preparation',
+  'Static Exercises',
+  'Dynamic Exercises',
+  'Stretching'
+] as const;
+
+export type ExerciseSection = typeof SECTIONS[number];
+export type MetricType = 'reps' | 'time';
+
 export interface Profile {
   id: string;
   username: string;
@@ -33,4 +46,51 @@ export interface Profile {
   total_xp?: number;
   created_at: string;
   updated_at?: string;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  section: ExerciseSection;
+  metric_type: MetricType;
+  created_at?: string;
+}
+
+export interface ExerciseSuggestion {
+  id: string;
+  user_id: string;
+  user_email: string;
+  exercise_name: string;
+  suggested_section: ExerciseSection;
+  metric_type: MetricType;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface UserPB {
+  id: string;
+  user_id: string;
+  exercise_id: string;
+  best_value: number;
+  is_assisted: boolean;
+  assist_notes?: string;
+  achieved_at?: string;
+  updated_at?: string;
+  exercise?: Exercise;
+}
+
+export interface WorkoutPlanItem {
+  id: string;
+  plan_id: string;
+  exercise_id: string;
+  order_index: number;
+  exercise?: Exercise;
+}
+
+export interface WorkoutPlan {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  items?: WorkoutPlanItem[];
 }

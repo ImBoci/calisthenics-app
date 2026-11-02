@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { supabase, isSupabaseConfigured, ADMIN_EMAIL } from './lib/supabase';
 import { LoginRegister } from './components/LoginRegister';
 import { ProfileView } from './components/ProfileView';
-import { BottomNav } from './components/BottomNav';
+import { BottomNav, NavTab } from './components/BottomNav';
+import { CatalogView } from './components/CatalogView';
+import { PBsView } from './components/PBsView';
+import { WorkoutsView } from './components/WorkoutsView';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ThemeProvider } from './context/ThemeContext';
 import { Session } from '@supabase/supabase-js';
-import { Dumbbell, Trophy } from 'lucide-react';
 
 function MainApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentTab, setCurrentTab] = useState<'profile' | 'workouts' | 'leaderboard'>('profile');
+  const [currentTab, setCurrentTab] = useState<NavTab>('workouts');
+  const [suggestionCount, setSuggestionCount] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
+      if (session?.user?.email === ADMIN_EMAIL) {
+        checkAdminSuggestions();
+      }
     });
 
     const {
@@ -24,22 +30,42 @@ function MainApp() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setLoading(false);
+      if (session?.user?.email === ADMIN_EMAIL) {
+        checkAdminSuggestions();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkAdminSuggestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exercise_suggestions')
+        .select('id');
+      if (!error && data) {
+        setSuggestionCount(data.length);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const handleAuthSuccess = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       setSession(session);
-      setCurrentTab('profile');
+      setCurrentTab('workouts');
+      if (session.user?.email === ADMIN_EMAIL) {
+        checkAdminSuggestions();
+      }
     }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setCurrentTab('workouts');
   };
 
   if (loading) {
@@ -79,46 +105,34 @@ function MainApp() {
               <LoginRegister onAuthSuccess={handleAuthSuccess} />
             </div>
           ) : (
-            <div className="flex-1 pb-24">
-              {currentTab === 'profile' && <ProfileView onLogout={handleLogout} />}
-
+            <div className="flex-1">
               {currentTab === 'workouts' && (
-                <div className="w-full py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
-                    <Dumbbell className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Stage 2: Workout Logging</h3>
-                  <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
-                    Coming soon! Track sets, reps, and calisthenics progressions with your 2 squad mates.
-                  </p>
-                  <button
-                    onClick={() => setCurrentTab('profile')}
-                    className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
-                  >
-                    Back to Profile
-                  </button>
-                </div>
+                <WorkoutsView 
+                  currentUser={session.user} 
+                  onNavigateToCatalog={() => setCurrentTab('catalog')} 
+                />
               )}
 
-              {currentTab === 'leaderboard' && (
-                <div className="w-full py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt flex items-center justify-center border border-retro-day-border dark:border-retro-night-border text-retro-day-accent dark:text-retro-night-accent">
-                    <Trophy className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold mb-2">Stage 3: Squad Leaderboard</h3>
-                  <p className="text-sm text-retro-day-textMuted dark:text-retro-night-textMuted">
-                    Compete with your 2 friends on weekly points, consistency streaks, and pull-up records.
-                  </p>
-                  <button
-                    onClick={() => setCurrentTab('profile')}
-                    className="mt-6 px-4 py-2 text-xs font-bold rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white transition-all"
-                  >
-                    Back to Profile
-                  </button>
-                </div>
+              {currentTab === 'pbs' && (
+                <PBsView currentUser={session.user} />
               )}
 
-              <BottomNav currentTab={currentTab} onTabChange={setCurrentTab} />
+              {currentTab === 'catalog' && (
+                <CatalogView 
+                  currentUser={session.user} 
+                  onSuggestionCountChange={setSuggestionCount} 
+                />
+              )}
+
+              {currentTab === 'profile' && (
+                <ProfileView onLogout={handleLogout} />
+              )}
+
+              <BottomNav 
+                currentTab={currentTab} 
+                onTabChange={setCurrentTab} 
+                suggestionCount={session.user.email === ADMIN_EMAIL ? suggestionCount : 0}
+              />
             </div>
           )}
         </main>

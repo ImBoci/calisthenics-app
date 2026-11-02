@@ -1,0 +1,790 @@
+import React, { useState, useEffect } from 'react';
+import { supabase, Exercise, ExerciseSuggestion, SECTIONS, ExerciseSection, MetricType, ADMIN_EMAIL } from '../lib/supabase';
+import { 
+  Plus, 
+  Search, 
+  BookOpen, 
+  Sparkles, 
+  Check, 
+  X, 
+  Clock, 
+  Repeat, 
+  MessageSquare, 
+  Trash2, 
+  Layers,
+  ShieldCheck,
+  AlertCircle
+} from 'lucide-react';
+import { User } from '@supabase/supabase-js';
+
+interface CatalogViewProps {
+  currentUser: User | null;
+  onSuggestionCountChange?: (count: number) => void;
+}
+
+export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggestionCountChange }) => {
+  const isAdmin = currentUser?.email === ADMIN_EMAIL;
+
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [suggestions, setSuggestions] = useState<ExerciseSuggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('All');
+
+  // Modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showSuggestionsDrawer, setShowSuggestionsDrawer] = useState(false);
+
+  // Add Exercise Form (Admin)
+  const [name, setName] = useState('');
+  const [section, setSection] = useState<ExerciseSection>('Warmup');
+  const [metricType, setMetricType] = useState<MetricType>('reps');
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Suggest Form (Friends)
+  const [suggestName, setSuggestName] = useState('');
+  const [suggestSection, setSuggestSection] = useState<ExerciseSection>('Static Exercises');
+  const [suggestMetric, setSuggestMetric] = useState<MetricType>('reps');
+  const [suggestNotes, setSuggestNotes] = useState('');
+
+  useEffect(() => {
+    fetchExercises();
+    if (isAdmin) {
+      fetchSuggestions();
+    }
+  }, [isAdmin]);
+
+  const showToast = (msg: string) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(null), 3000);
+  };
+
+  const fetchExercises = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      setExercises(data || []);
+    } catch (err) {
+      console.error('Error fetching exercises:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSuggestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('exercise_suggestions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      const list = data || [];
+      setSuggestions(list);
+      if (onSuggestionCountChange) {
+        onSuggestionCountChange(list.length);
+      }
+    } catch (err) {
+      console.error('Error fetching suggestions:', err);
+    }
+  };
+
+  // Admin: Add Exercise directly
+  const handleAddExercise = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert({
+          name: name.trim(),
+          section,
+          metric_type: metricType,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setExercises(prev => [...prev, data]);
+      setName('');
+      setShowAddModal(false);
+      showToast(`Added "${data.name}" to catalog!`);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setFormError(err.message);
+      } else {
+        setFormError('Failed to add exercise');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Friend: Submit Suggestion
+  const handleSuggestExercise = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suggestName.trim() || !currentUser) return;
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const { error } = await supabase
+        .from('exercise_suggestions')
+        .insert({
+          user_id: currentUser.id,
+          user_email: currentUser.email || 'Friend',
+          exercise_name: suggestName.trim(),
+          suggested_section: suggestSection,
+          metric_type: suggestMetric,
+          notes: suggestNotes.trim() || null,
+        });
+
+      if (error) throw error;
+
+      setSuggestName('');
+      setSuggestNotes('');
+      setShowSuggestModal(false);
+      showToast('Suggestion sent to admin!');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setFormError(err.message);
+      } else {
+        setFormError('Failed to send suggestion');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Admin: Approve suggestion -> moves to exercises table and deletes from suggestions
+  const handleApproveSuggestion = async (sugg: ExerciseSuggestion) => {
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert({
+          name: sugg.exercise_name,
+          section: sugg.suggested_section,
+          metric_type: sugg.metric_type,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase
+        .from('exercise_suggestions')
+        .delete()
+        .eq('id', sugg.id);
+
+      setExercises(prev => [...prev, data]);
+      const updated = suggestions.filter(s => s.id !== sugg.id);
+      setSuggestions(updated);
+      if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
+
+      showToast(`Approved "${sugg.exercise_name}"!`);
+    } catch (err) {
+      console.error('Error approving suggestion:', err);
+    }
+  };
+
+  // Admin: Dismiss suggestion
+  const handleDismissSuggestion = async (suggId: string) => {
+    try {
+      await supabase
+        .from('exercise_suggestions')
+        .delete()
+        .eq('id', suggId);
+
+      const updated = suggestions.filter(s => s.id !== suggId);
+      setSuggestions(updated);
+      if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
+      showToast('Suggestion dismissed');
+    } catch (err) {
+      console.error('Error dismissing suggestion:', err);
+    }
+  };
+
+  // Admin: 1-click starter seed if catalog is empty
+  const handleSeedDefaults = async () => {
+    setSubmitting(true);
+    const defaults = [
+      { name: 'Jumping Jacks', section: 'Warmup', metric_type: 'time' },
+      { name: 'Arm Circles & Crosses', section: 'Warmup', metric_type: 'time' },
+      { name: 'Wrist Rotations & Flexions', section: 'Joint Preparation', metric_type: 'time' },
+      { name: 'Shoulder Dislocates', section: 'Joint Preparation', metric_type: 'reps' },
+      { name: 'Scapular Pull-ups', section: 'Joint Preparation', metric_type: 'reps' },
+      { name: 'Handstand Hold (Wall/Chest)', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Planche Lean', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Dead Hang', section: 'Static Exercises', metric_type: 'time' },
+      { name: 'Pull-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Dips (Parallel Bars)', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Pike Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Muscle-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
+      { name: 'Shoulder Bridge Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Pike Hamstring Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Cobra Chest Stretch', section: 'Stretching', metric_type: 'time' },
+    ];
+
+    try {
+      const { data, error } = await supabase
+        .from('exercises')
+        .insert(defaults)
+        .select();
+
+      if (error) throw error;
+      setExercises(data || []);
+      showToast(`Added ${data?.length || 0} classic calisthenics moves!`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Filter exercises
+  const filteredExercises = exercises.filter(ex => {
+    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSection = selectedSectionFilter === 'All' || ex.section === selectedSectionFilter;
+    return matchesSearch && matchesSection;
+  });
+
+  return (
+    <div className="w-full max-w-md mx-auto pt-2 pb-24">
+      {/* Toast Notification */}
+      {successToast && (
+        <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-retro-day-accent dark:bg-retro-night-accent text-white px-4 py-2 rounded-2xl shadow-lg text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <Check className="w-4 h-4" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
+      {/* Header Bar */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <span className="text-xs uppercase tracking-widest font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" />
+            Stage 2 Catalog
+          </span>
+          <h2 className="text-xl font-bold text-retro-day-text dark:text-retro-night-text">
+            Exercise Vault
+          </h2>
+        </div>
+
+        {/* Action Button: Admin Add vs Friend Suggest */}
+        <div className="flex items-center gap-2">
+          {isAdmin ? (
+            <>
+              {suggestions.length > 0 && (
+                <button
+                  onClick={() => setShowSuggestionsDrawer(true)}
+                  className="relative p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 active:scale-95 transition-all"
+                  title="View Friend Suggestions"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
+                    {suggestions.length}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => { setFormError(null); setShowAddModal(true); }}
+                className="px-3 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => { setFormError(null); setShowSuggestModal(true); }}
+              className="px-3 py-2 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white text-retro-day-text dark:text-retro-night-text text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-retro-day-accent dark:text-retro-night-accent" />
+              Suggest
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Admin indicator tag */}
+      {isAdmin && (
+        <div className="mb-3 px-3 py-1.5 rounded-xl bg-retro-day-accentSoft/60 dark:bg-retro-night-accentSoft/40 border border-retro-day-accent/30 dark:border-retro-night-accent/30 flex items-center justify-between text-[11px] text-retro-day-text dark:text-retro-night-text font-medium">
+          <span className="flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-retro-day-accent dark:text-retro-night-accent" />
+            Admin privileges active
+          </span>
+          {suggestions.length > 0 && (
+            <button
+              onClick={() => setShowSuggestionsDrawer(true)}
+              className="underline font-bold text-retro-day-accent dark:text-retro-night-accent"
+            >
+              {suggestions.length} pending suggestion{suggestions.length > 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Search Input */}
+      <div className="relative mb-3">
+        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-retro-day-textMuted dark:text-retro-night-textMuted pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search moves (e.g. Pull-ups, Handstand)..."
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 text-sm focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-retro-day-textMuted dark:text-retro-night-textMuted p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Section Filter Pills (Horizontal Scroll) */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none text-xs">
+        {['All', ...SECTIONS].map(sec => {
+          const isSelected = selectedSectionFilter === sec;
+          return (
+            <button
+              key={sec}
+              onClick={() => setSelectedSectionFilter(sec)}
+              className={`px-3 py-1.5 rounded-xl whitespace-nowrap transition-all font-semibold active:scale-95 border ${
+                isSelected
+                  ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                  : 'bg-retro-day-card dark:bg-retro-night-card text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border hover:text-retro-day-text'
+              }`}
+            >
+              {sec}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Catalog List */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-3 border-retro-day-accent dark:border-retro-night-accent border-t-transparent animate-spin" />
+        </div>
+      ) : exercises.length === 0 ? (
+        <div className="p-8 text-center bg-retro-day-card dark:bg-retro-night-card rounded-3xl border border-retro-day-border dark:border-retro-night-border">
+          <Layers className="w-10 h-10 mx-auto mb-3 text-retro-day-textMuted dark:text-retro-night-textMuted opacity-60" />
+          <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text mb-1">
+            Catalog is empty
+          </h3>
+          <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mb-4">
+            {isAdmin 
+              ? 'Add your first exercise or seed classic calisthenics progressions with 1 click.' 
+              : 'Propose an exercise to the squad admin to get it added to the catalog.'}
+          </p>
+
+          {isAdmin ? (
+            <div className="flex flex-col gap-2 max-w-xs mx-auto">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow"
+              >
+                + Add Exercise Manually
+              </button>
+              <button
+                onClick={handleSeedDefaults}
+                disabled={submitting}
+                className="py-2.5 px-4 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text font-bold text-xs hover:border-retro-day-accent transition-all"
+              >
+                {submitting ? 'Seeding...' : '⚡ Seed 17 Classic Calisthenics Exercises'}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowSuggestModal(true)}
+              className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow"
+            >
+              + Suggest an Exercise
+            </button>
+          )}
+        </div>
+      ) : filteredExercises.length === 0 ? (
+        <div className="p-6 text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted bg-retro-day-card dark:bg-retro-night-card rounded-2xl border border-retro-day-border dark:border-retro-night-border">
+          No exercises found matching &quot;{searchQuery}&quot; in {selectedSectionFilter}.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredExercises.map(ex => (
+            <div
+              key={ex.id}
+              className="p-3.5 rounded-2xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border shadow-sm flex items-center justify-between"
+            >
+              <div className="min-w-0 pr-3">
+                <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text truncate">
+                  {ex.name}
+                </h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted">
+                    {ex.section}
+                  </span>
+                  <span className="text-[10px] font-mono text-retro-day-textMuted dark:text-retro-night-textMuted flex items-center gap-1">
+                    {ex.metric_type === 'time' ? (
+                      <>
+                        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        Hold (Seconds)
+                      </>
+                    ) : (
+                      <>
+                        <Repeat className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
+                        Repetitions
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-1.5">
+                <div className="w-8 h-8 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border flex items-center justify-center text-retro-day-accent dark:text-retro-night-accent">
+                  {ex.metric_type === 'time' ? <Clock className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ADMIN ADD EXERCISE */}
+      {/* ========================================================================= */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
+                <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
+                  Add Exercise
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-1 rounded-full text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAddExercise} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Exercise Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. Muscle-up, Front Lever"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Routine Section
+                </label>
+                <select
+                  value={section}
+                  onChange={e => setSection(e.target.value as ExerciseSection)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+                >
+                  {SECTIONS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Metric Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMetricType('reps')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      metricType === 'reps'
+                        ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                        : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border'
+                    }`}
+                  >
+                    <Repeat className="w-3.5 h-3.5" />
+                    Repetitions
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMetricType('time')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      metricType === 'time'
+                        ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                        : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    Hold Time (s)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
+                >
+                  {submitting ? 'Saving...' : 'Add to Catalog'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: FRIEND SUGGEST EXERCISE */}
+      {/* ========================================================================= */}
+      {showSuggestModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
+                <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
+                  Suggest Exercise
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSuggestModal(false)}
+                className="p-1 rounded-full text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mb-3">
+              Propose a move to the squad admin. Once approved, it will appear in the catalog!
+            </p>
+
+            {formError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSuggestExercise} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Exercise Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={suggestName}
+                  onChange={e => setSuggestName(e.target.value)}
+                  placeholder="e.g. Ring Dips, Archer Push-up"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Section
+                </label>
+                <select
+                  value={suggestSection}
+                  onChange={e => setSuggestSection(e.target.value as ExerciseSection)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+                >
+                  {SECTIONS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Metric
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSuggestMetric('reps')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      suggestMetric === 'reps'
+                        ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                        : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border'
+                    }`}
+                  >
+                    <Repeat className="w-3.5 h-3.5" />
+                    Reps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuggestMetric('time')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      suggestMetric === 'time'
+                        ? 'bg-retro-day-accent text-white border-retro-day-accent shadow-sm'
+                        : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    Hold Time
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
+                  Note for Squad (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={suggestNotes}
+                  onChange={e => setSuggestNotes(e.target.value)}
+                  placeholder="e.g. Great progression for muscle-ups"
+                  className="w-full px-3.5 py-2 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSuggestModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
+                >
+                  {submitting ? 'Sending...' : 'Send Proposal'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* DRAWER: ADMIN INCOMING SUGGESTIONS */}
+      {/* ========================================================================= */}
+      {showSuggestionsDrawer && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-md max-h-[85vh] bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-retro-day-border dark:border-retro-night-border">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
+                  Incoming Suggestions ({suggestions.length})
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowSuggestionsDrawer(false)}
+                className="p-1 rounded-full text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-3 space-y-3">
+              {suggestions.length === 0 ? (
+                <div className="text-center py-10 text-xs text-retro-day-textMuted dark:text-retro-night-textMuted">
+                  All suggestions have been reviewed!
+                </div>
+              ) : (
+                suggestions.map(sugg => (
+                  <div
+                    key={sugg.id}
+                    className="p-3.5 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border"
+                  >
+                    <div className="flex items-start justify-between mb-1.5">
+                      <div>
+                        <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text">
+                          {sugg.exercise_name}
+                        </h4>
+                        <span className="text-[10px] text-retro-day-textMuted dark:text-retro-night-textMuted">
+                          From: {sugg.user_email}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-surface dark:bg-retro-night-surface border border-retro-day-border dark:border-retro-night-border">
+                        {sugg.suggested_section} • {sugg.metric_type}
+                      </div>
+                    </div>
+
+                    {sugg.notes && (
+                      <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted italic bg-retro-day-bg/60 dark:bg-retro-night-bg/60 p-2 rounded-xl mb-3 border border-retro-day-border/60 dark:border-retro-night-border/60">
+                        &quot;{sugg.notes}&quot;
+                      </p>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDismissSuggestion(sugg.id)}
+                        className="py-1.5 px-3 rounded-xl border border-rose-300 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1 active:scale-95"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Dismiss
+                      </button>
+                      <button
+                        onClick={() => handleApproveSuggestion(sugg)}
+                        className="flex-1 py-1.5 px-3 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        Approve &amp; Add to Catalog
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <button
+              onClick={() => setShowSuggestionsDrawer(false)}
+              className="w-full mt-2 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
