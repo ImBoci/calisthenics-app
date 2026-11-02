@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase, Profile } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { 
@@ -11,7 +11,9 @@ import {
   Pencil, 
   UserCircle2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Camera,
+  X
 } from 'lucide-react';
 
 interface ProfileViewProps {
@@ -28,6 +30,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
   const [workoutDates, setWorkoutDates] = useState<string[]>([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [checkingIn, setCheckingIn] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Editable fields
   const [displayName, setDisplayName] = useState('');
@@ -196,6 +200,54 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + direction, 1));
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      // Upload to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', currentUser.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+      setFeedbackMsg('Avatar updated! 📸');
+      setTimeout(() => setFeedbackMsg(null), 2500);
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      setFeedbackMsg('Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
   const formattedDate = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, {
         month: 'short',
@@ -235,13 +287,46 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
         <div className="flex items-center gap-4 relative">
           {/* Avatar with retro ring */}
           <div className="relative">
-            <div className="w-18 h-18 w-[72px] h-[72px] rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border-2 border-retro-day-borderStrong/40 dark:border-retro-night-borderStrong flex items-center justify-center shadow-inner text-retro-day-text dark:text-retro-night-text font-bold text-2xl font-mono">
-              {getInitials(profile?.display_name || profile?.username)}
+            <div 
+              onClick={editing ? triggerFileInput : undefined}
+              className={`w-18 h-18 w-[72px] h-[72px] rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border-2 border-retro-day-borderStrong/40 dark:border-retro-night-borderStrong flex items-center justify-center shadow-inner overflow-hidden ${editing ? 'cursor-pointer' : ''}`}
+            >
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt="Avatar" 
+                  className="object-cover w-full h-full"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <span className="text-retro-day-text dark:text-retro-night-text font-bold text-2xl font-mono">
+                  {getInitials(profile?.display_name || profile?.username)}
+                </span>
+              )}
+              {editing && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+              )}
             </div>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
+                <div className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              </div>
+            )}
             <div className="absolute -bottom-1 -right-1 bg-retro-day-accent dark:bg-retro-night-accent text-white p-1 rounded-full shadow">
               <Flame className="w-3.5 h-3.5 fill-current" />
             </div>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarUpload}
+            className="hidden"
+          />
 
           <div className="flex-1 min-w-0">
             {editing ? (

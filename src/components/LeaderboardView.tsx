@@ -25,12 +25,13 @@ interface RankedPB extends UserPB {
   exercise_name?: string;
   exercise_metric_type?: string;
   exercise_section?: string;
+  avatar_url?: string;
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, onNavigateToPBs }) => {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [allPbs, setAllPbs] = useState<UserPB[]>([]);
-  const [profileMap, setProfileMap] = useState<Record<string, { display_name: string; username: string }>>({});
+  const [profileMap, setProfileMap] = useState<Record<string, { display_name: string; username: string; avatar_url?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<string>('All');
@@ -55,7 +56,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       // 2. Fetch all user PBs with joined profiles and exercises
       const { data: pbData, error: pbErr } = await supabase
         .from('user_pbs')
-        .select('*, profiles(username, display_name), exercises(name, metric_type, section)')
+        .select('*, profiles(username, display_name, avatar_url), exercises(name, metric_type, section)')
         .order('best_value', { ascending: false });
 
       if (pbErr) throw pbErr;
@@ -63,12 +64,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
       // 3. Build profile map from joined data
       if (pbData) {
-        const map: Record<string, { display_name: string; username: string }> = {};
+        const map: Record<string, { display_name: string; username: string; avatar_url?: string }> = {};
         pbData.forEach(pb => {
           if (pb.profiles && !map[pb.user_id]) {
             map[pb.user_id] = { 
               display_name: pb.profiles.display_name, 
-              username: pb.profiles.username 
+              username: pb.profiles.username,
+              avatar_url: pb.profiles.avatar_url
             };
           }
         });
@@ -105,6 +107,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
     const exerciseName = (pb as any).exercises?.name || exercise?.name;
     const exerciseMetric = (pb as any).exercises?.metric_type || exercise?.metric_type;
     const exerciseSection = (pb as any).exercises?.section || exercise?.section;
+    const avatarUrl = profile?.avatar_url;
 
     pbsByExercise[pb.exercise_id].push({
       ...pb,
@@ -113,6 +116,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       exercise_name: exerciseName,
       exercise_metric_type: exerciseMetric,
       exercise_section: exerciseSection,
+      avatar_url: avatarUrl,
     });
   });
 
@@ -315,6 +319,24 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                             ) : (
                               <span>{idx + 1}</span>
                             )}
+                          </div>
+
+                          {/* Avatar */}
+                          <div className="w-8 h-8 rounded-lg bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/60 dark:border-retro-night-border/60 flex items-center justify-center overflow-hidden shrink-0">
+                            {rank.avatar_url ? (
+                              <img 
+                                src={rank.avatar_url} 
+                                alt="" 
+                                className="object-cover w-full h-full"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.parentElement!.querySelector('span')?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <span className={`text-xs font-bold text-retro-day-text dark:text-retro-night-text ${rank.avatar_url ? 'hidden' : ''}`}>
+                              {rank.display_name.charAt(0).toUpperCase()}
+                            </span>
                           </div>
 
                           <div className="min-w-0">
