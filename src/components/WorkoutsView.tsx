@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Exercise, WorkoutPlan, SECTIONS, ExerciseSection } from '../lib/supabase';
+import { supabase, Exercise, WorkoutPlan, SECTIONS, ExerciseSection, SECTION_LABELS } from '../lib/supabase';
 import { 
   Dumbbell, 
   Plus, 
@@ -45,6 +45,18 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
   useEffect(() => {
     loadData();
   }, [currentUser]);
+
+  // Explicit fetch of catalog exercises on mount for modal
+  useEffect(() => {
+    const fetchCatalog = async () => {
+      const { data, error } = await supabase.from('exercises').select('*').order('name');
+      console.log('WorkoutsView fetched catalog exercises:', data, error);
+      if (data) {
+        setCatalogExercises(data);
+      }
+    };
+    fetchCatalog();
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -319,11 +331,11 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
   const groupPlanItemsBySection = (plan: WorkoutPlan) => {
     const grouped: Record<ExerciseSection, Exercise[]> = {
-      'Warmup': [],
-      'Joint Preparation': [],
-      'Static Exercises': [],
-      'Dynamic Exercises': [],
-      'Stretching': [],
+      'warmup': [],
+      'joint_prep': [],
+      'static': [],
+      'dynamic': [],
+      'stretching': [],
     };
 
     (plan.items || []).forEach(item => {
@@ -648,7 +660,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                           <span className="w-4 h-4 rounded-full bg-retro-day-accent text-white text-[10px] font-mono flex items-center justify-center">
                             {idx + 1}
                           </span>
-                          <span>{sec}</span>
+                          <span>{SECTION_LABELS[sec]}</span>
                           <span className="ml-auto text-[10px] text-retro-day-textMuted font-mono">
                             {moves.filter(m => selectedExerciseIds.includes(m.id)).length}/{moves.length}
                           </span>

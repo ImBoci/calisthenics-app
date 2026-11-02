@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Exercise, ExerciseSuggestion, SECTIONS, ExerciseSection, MetricType, ADMIN_EMAIL } from '../lib/supabase';
+import { supabase, Exercise, ExerciseSuggestion, SECTIONS, ExerciseSection, MetricType, ADMIN_EMAIL, SECTION_LABELS } from '../lib/supabase';
 import { 
   Plus, 
   Search, 
@@ -38,7 +38,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
   // Add Exercise Form (Admin)
   const [name, setName] = useState('');
-  const [section, setSection] = useState<ExerciseSection>('Warmup');
+  const [section, setSection] = useState<ExerciseSection>('warmup');
   const [metricType, setMetricType] = useState<MetricType>('reps');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
   // Suggest Form (Friends)
   const [suggestName, setSuggestName] = useState('');
-  const [suggestSection, setSuggestSection] = useState<ExerciseSection>('Static Exercises');
+  const [suggestSection, setSuggestSection] = useState<ExerciseSection>('static');
   const [suggestMetric, setSuggestMetric] = useState<MetricType>('reps');
   const [suggestNotes, setSuggestNotes] = useState('');
 
@@ -97,16 +97,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
     }
   };
 
-  // Sanitize section value to match DB format
+  // Sanitize section value to match DB format (now SECTIONS already has lowercase values)
   const sanitizeSection = (section: ExerciseSection): string => {
-    const sectionMap: Record<ExerciseSection, string> = {
-      'Warmup': 'warmup',
-      'Joint Preparation': 'joint_prep',
-      'Static Exercises': 'static',
-      'Dynamic Exercises': 'dynamic',
-      'Stretching': 'stretching',
-    };
-    return sectionMap[section] || section.toLowerCase().replace(/\s+/g, '_');
+    return section; // SECTIONS already has lowercase DB values
   };
 
   // Admin: Add Exercise directly
@@ -241,23 +234,23 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
   const handleSeedDefaults = async () => {
     setSubmitting(true);
     const defaults = [
-      { name: 'Jumping Jacks', section: 'Warmup', metric_type: 'time' },
-      { name: 'Arm Circles & Crosses', section: 'Warmup', metric_type: 'time' },
-      { name: 'Wrist Rotations & Flexions', section: 'Joint Preparation', metric_type: 'time' },
-      { name: 'Shoulder Dislocates', section: 'Joint Preparation', metric_type: 'reps' },
-      { name: 'Scapular Pull-ups', section: 'Joint Preparation', metric_type: 'reps' },
-      { name: 'Handstand Hold (Wall/Chest)', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Planche Lean', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Dead Hang', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Pull-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Dips (Parallel Bars)', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Pike Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Muscle-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Shoulder Bridge Stretch', section: 'Stretching', metric_type: 'time' },
-      { name: 'Pike Hamstring Stretch', section: 'Stretching', metric_type: 'time' },
-      { name: 'Cobra Chest Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Jumping Jacks', section: 'warmup', metric_type: 'time' },
+      { name: 'Arm Circles & Crosses', section: 'warmup', metric_type: 'time' },
+      { name: 'Wrist Rotations & Flexions', section: 'joint_prep', metric_type: 'time' },
+      { name: 'Shoulder Dislocates', section: 'joint_prep', metric_type: 'reps' },
+      { name: 'Scapular Pull-ups', section: 'joint_prep', metric_type: 'reps' },
+      { name: 'Handstand Hold (Wall/Chest)', section: 'static', metric_type: 'time' },
+      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'static', metric_type: 'time' },
+      { name: 'Planche Lean', section: 'static', metric_type: 'time' },
+      { name: 'Dead Hang', section: 'static', metric_type: 'time' },
+      { name: 'Pull-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Dips (Parallel Bars)', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Push-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Pike Push-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Muscle-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Shoulder Bridge Stretch', section: 'stretching', metric_type: 'time' },
+      { name: 'Pike Hamstring Stretch', section: 'stretching', metric_type: 'time' },
+      { name: 'Cobra Chest Stretch', section: 'stretching', metric_type: 'time' },
     ];
 
     try {

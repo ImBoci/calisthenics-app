@@ -431,7 +431,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
               }
             }}
             disabled={saving}
-            className="flex items-center gap-1 text-retro-day-accent dark:text-retro-night-accent font-semibold hover:underline active:scale-95 transition-transform"
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-retro-day-accent dark:text-retro-night-accent hover:underline active:scale-95 transition-transform"
           >
             {editing ? (
               <>
@@ -439,7 +439,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
               </>
             ) : (
               <>
-                <Pencil className="w-3.5 h-3.5" /> Edit
+                <Pencil className="w-3.5 h-3.5" /> <span>Edit</span>
               </>
             )}
           </button>

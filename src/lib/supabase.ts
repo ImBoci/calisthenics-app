@@ -26,14 +26,23 @@ export const supabase = createClient(
 export const ADMIN_EMAIL = 'vargadaniel001@gmail.com';
 
 export const SECTIONS = [
-  'Warmup',
-  'Joint Preparation',
-  'Static Exercises',
-  'Dynamic Exercises',
-  'Stretching'
+  'warmup',
+  'joint_prep',
+  'static',
+  'dynamic',
+  'stretching'
 ] as const;
 
 export type ExerciseSection = typeof SECTIONS[number];
+
+// Display labels for UI
+export const SECTION_LABELS: Record<ExerciseSection, string> = {
+  warmup: 'Warmup',
+  joint_prep: 'Joint Preparation',
+  static: 'Static Exercises',
+  dynamic: 'Dynamic Exercises',
+  stretching: 'Stretching',
+};
 export type MetricType = 'reps' | 'time';
 
 export interface Profile {
@@ -104,6 +113,6 @@ export interface WorkoutLog {
 
 /** Competitive sections shown on the Leaderboard */
 export const COMPETITIVE_SECTIONS: ExerciseSection[] = [
-  'Static Exercises',
-  'Dynamic Exercises',
+  'static',
+  'dynamic',
 ];

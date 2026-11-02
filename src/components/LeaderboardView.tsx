@@ -44,37 +44,41 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   const loadLeaderboardData = async () => {
     setLoading(true);
     try {
-      // 1. Fetch all exercises
+      // 1. Fetch competitive exercises (static and dynamic)
       const { data: exData, error: exErr } = await supabase
         .from('exercises')
         .select('*')
+        .in('section', ['static', 'dynamic'])
         .order('name', { ascending: true });
 
+      console.log('Leaderboard fetched exercises:', exData, exErr);
       if (exErr) throw exErr;
       setExercises(exData || []);
 
-      // 2. Fetch all user PBs with joined exercises and profiles
-      const { data: pbData, error: pbErr } = await supabase
+      // 2. Fetch all squad PBs
+      const { data: pbsData, error: pbsErr } = await supabase
         .from('user_pbs')
-        .select('*, exercises(*), profiles(*)')
+        .select('*')
         .order('best_value', { ascending: false });
 
-      console.log('Leaderboard PBs:', pbData, pbErr);
+      console.log('Leaderboard fetched PBs:', pbsData, pbsErr);
+      if (pbsErr) throw pbsErr;
+      setAllPbs(pbsData || []);
 
-      if (pbErr) throw pbErr;
-      setAllPbs(pbData || []);
+      // 3. Fetch all profiles
+      const { data: profilesData, error: profilesErr } = await supabase
+        .from('profiles')
+        .select('id, display_name, username, avatar_url');
 
-      // 3. Build profile map from joined data
-      if (pbData) {
+      console.log('Leaderboard fetched profiles:', profilesData, profilesErr);
+      if (!profilesErr && profilesData) {
         const map: Record<string, { display_name: string; username: string; avatar_url?: string }> = {};
-        pbData.forEach(pb => {
-          if (pb.profiles && !map[pb.user_id]) {
-            map[pb.user_id] = { 
-              display_name: pb.profiles.display_name, 
-              username: pb.profiles.username,
-              avatar_url: pb.profiles.avatar_url
-            };
-          }
+        profilesData.forEach(p => {
+          map[p.id] = { 
+            display_name: p.display_name, 
+            username: p.username,
+            avatar_url: p.avatar_url
+          };
         });
         setProfileMap(map);
       }
@@ -104,11 +108,11 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       displayName = `@${profile.username}`;
     }
 
-    // Extract exercise info from joined data or fallback to exercises array
+    // Match exercise from exercises array by exercise_id
     const exercise = exercises.find(e => e.id === pb.exercise_id);
-    const exerciseName = (pb as any).exercises?.name || exercise?.name;
-    const exerciseMetric = (pb as any).exercises?.metric_type || exercise?.metric_type;
-    const exerciseSection = (pb as any).exercises?.section || exercise?.section;
+    const exerciseName = exercise?.name || 'Unknown Exercise';
+    const exerciseMetric = exercise?.metric_type || 'reps';
+    const exerciseSection = exercise?.section || 'static';
     const avatarUrl = profile?.avatar_url;
 
     pbsByExercise[pb.exercise_id].push({
@@ -143,7 +147,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
   // Filter to only competitive exercises (static and dynamic)
   const competitiveExercises = exercises.filter(ex => 
-    ex.section === 'Static Exercises' || ex.section === 'Dynamic Exercises'
+    ex.section === 'static' || ex.section === 'dynamic'
   );
 
   const filteredExercises = competitiveExercises.filter(ex => {
@@ -152,6 +156,13 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
     const matchesExercise = selectedExercise === 'All' || ex.id === selectedExercise;
     return matchesSearch && matchesSection && matchesExercise;
   });
+
+  // Set initial selected exercise to 'All' if exercises exist
+  useEffect(() => {
+    if (exercises.length > 0 && selectedExercise === 'All') {
+      setSelectedExercise('All');
+    }
+  }, [exercises]);
 
   // Separate exercises with records vs exercises without
   const exercisesWithRecords = filteredExercises.filter(ex => pbsByExercise[ex.id]?.length > 0);
