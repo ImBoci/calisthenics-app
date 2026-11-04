@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Dumbbell, Trophy, BookOpen, Crown } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export type NavTab = 'workouts' | 'leaderboard' | 'pbs' | 'catalog' | 'profile';
 
@@ -10,12 +11,14 @@ interface BottomNavProps {
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({ currentTab, onTabChange, suggestionCount = 0 }) => {
+  const { t } = useLanguage();
+
   const tabs = [
-    { id: 'workouts' as NavTab, label: 'Workouts', icon: Dumbbell },
-    { id: 'leaderboard' as NavTab, label: 'Board', icon: Crown },
-    { id: 'pbs' as NavTab, label: 'PBs', icon: Trophy },
-    { id: 'catalog' as NavTab, label: 'Catalog', icon: BookOpen, badge: suggestionCount },
-    { id: 'profile' as NavTab, label: 'Profile', icon: User },
+    { id: 'workouts' as NavTab, label: t.navWorkouts, icon: Dumbbell },
+    { id: 'leaderboard' as NavTab, label: t.navLeaderboard, icon: Crown },
+    { id: 'pbs' as NavTab, label: t.navPBs, icon: Trophy },
+    { id: 'catalog' as NavTab, label: t.navCatalog, icon: BookOpen, badge: suggestionCount },
+    { id: 'profile' as NavTab, label: t.navProfile, icon: User },
   ];
 
   return (

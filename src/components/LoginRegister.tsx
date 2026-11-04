@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Lock, Mail, User, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface LoginRegisterProps {
   onAuthSuccess: () => void;
 }
 
 export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) => {
+  const { t } = useLanguage();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,16 +21,16 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   const formatAuthError = (message: string): string => {
     const lower = message.toLowerCase();
     if (lower.includes('already registered') || lower.includes('user already exists')) {
-      return 'An account with this email already exists. Try signing in instead!';
+      return t.errEmailExists;
     }
     if (lower.includes('at least 6 characters') || lower.includes('weak password')) {
-      return 'Password must be at least 6 characters long.';
+      return t.errWeakPassword;
     }
     if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
-      return 'Incorrect email or password. Please double-check your credentials.';
+      return t.errInvalidCreds;
     }
     if (lower.includes('rate limit')) {
-      return 'Too many login attempts. Please wait a moment and try again.';
+      return t.errRateLimit;
     }
     return message;
   };
@@ -38,7 +40,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
     setErrorMsg(null);
 
     if (!isSupabaseConfigured) {
-      setErrorMsg('Supabase is not configured yet. Please check your credentials in .env.');
+      setErrorMsg(t.errSupabaseNotConfigured);
       return;
     }
 
@@ -47,12 +49,12 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
     try {
       if (isSignUp) {
         if (!username.trim() || !displayName.trim()) {
-          throw new Error('Please enter both a display name and a username.');
+          throw new Error(t.errEnterBoth);
         }
 
         const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
         if (!cleanUsername) {
-          throw new Error('Username can only contain letters, numbers, and underscores.');
+          throw new Error(t.errUsernameChars);
         }
 
           const trimmedEmail = email.trim();
@@ -115,7 +117,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       if (err instanceof Error) {
         setErrorMsg(formatAuthError(err.message));
       } else {
-        setErrorMsg('An unexpected error occurred. Please try again.');
+        setErrorMsg(t.errUnexpected);
       }
     } finally {
       setLoading(false);
@@ -137,7 +139,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           Chalk &amp; Timber
         </h1>
         <p className="text-xs font-medium mt-1 text-retro-day-textMuted dark:text-retro-night-textMuted tracking-wide">
-          Squad Calisthenics &amp; Progression
+          {t.authTagline}
         </p>
       </div>
 
@@ -151,7 +153,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
               : 'text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text'
             }`}
         >
-          Sign In
+          {t.signIn}
         </button>
         <button
           type="button"
@@ -161,7 +163,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
               : 'text-retro-day-textMuted dark:text-retro-night-textMuted hover:text-retro-day-text'
             }`}
         >
-          Create Account
+          {t.createAccount}
         </button>
       </div>
 
@@ -180,7 +182,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
             <>
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
-                  Display Name
+                  {t.displayName}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-retro-day-textMuted dark:text-retro-night-textMuted">
@@ -199,7 +201,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
-                  Username
+                  {t.username}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-retro-day-textMuted dark:text-retro-night-textMuted font-mono text-sm">
@@ -223,7 +225,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
-              Email
+              {t.email}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-retro-day-textMuted dark:text-retro-night-textMuted">
@@ -246,7 +248,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
-              Password
+              {t.password}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-retro-day-textMuted dark:text-retro-night-textMuted">
@@ -272,9 +274,9 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
             {loading ? (
               <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : isSignUp ? (
-              'Join Chalk & Timber'
+              t.joinChalkTimber
             ) : (
-              'Sign In'
+              t.signIn
             )}
           </button>
         </form>

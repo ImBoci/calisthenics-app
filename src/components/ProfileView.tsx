@@ -1,20 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase, Profile } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { 
-  LogOut, 
-  Dumbbell, 
-  Award, 
-  Calendar as CalendarIcon, 
-  Flame, 
-  Check, 
-  Pencil, 
+import {
+  LogOut,
+  Dumbbell,
+  Award,
+  Calendar as CalendarIcon,
+  Flame,
+  Check,
+  Pencil,
   UserCircle2,
   ChevronLeft,
   ChevronRight,
   Camera,
   X
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ProfileViewProps {
   onLogout: () => void;
@@ -22,6 +23,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser }) => {
+  const { t, language } = useLanguage();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -197,7 +199,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startDay = firstDay.getDay();
+    // Shifts Sunday (0) to index 6, and Monday (1) to index 0 for Monday-first calendar
+    const startDay = (firstDay.getDay() + 6) % 7;
     const totalDays = lastDay.getDate();
     const days = [];
     for (let i = 0; i < startDay; i++) {
@@ -296,11 +299,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
   };
 
   const formattedDate = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString(undefined, {
+    ? new Date(profile.created_at).toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', {
         month: 'short',
         year: 'numeric',
       })
-    : 'Recently';
+    : t.joined;
 
   if (loading) {
     return (
@@ -316,7 +319,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
       <div className="mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex items-center justify-center gap-2">
           <UserCircle2 className="w-5 h-5" />
-          Profile
+          {t.profile}
         </h2>
       </div>
 
@@ -394,7 +397,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
             </p>
             <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-retro-day-accentSoft dark:bg-retro-night-accentSoft text-retro-day-text dark:text-retro-night-text border border-retro-day-accent/20 dark:border-retro-night-accent/20">
               <Award className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
-              <span>Squad Member</span>
+              <span>{t.squadBrotherhood}</span>
             </div>
           </div>
         </div>
@@ -404,7 +407,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           {/* Starting Level */}
           <div className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-1">
-              Starting Level
+              {t.startingLevel}
             </span>
             {editing ? (
               <select
@@ -428,7 +431,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           {/* Favorite Exercise */}
           <div className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-1">
-              Favorite Move
+              {t.favoriteMove}
             </span>
             {editing ? (
               <select
@@ -456,7 +459,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
         <div className="mt-4 flex items-center justify-between text-xs text-retro-day-textMuted dark:text-retro-night-textMuted">
           <span className="flex items-center gap-1.5">
             <CalendarIcon className="w-3.5 h-3.5" />
-            Joined {formattedDate}
+            {t.memberSince} {formattedDate}
           </span>
           <button
             type="button"
@@ -472,11 +475,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           >
             {editing ? (
               <>
-                <Check className="w-3.5 h-3.5" /> {saving ? 'Saving...' : 'Done'}
+                <Check className="w-3.5 h-3.5" /> {saving ? t.saving : t.done}
               </>
             ) : (
               <>
-                <Pencil className="w-3.5 h-3.5" /> <span>Edit</span>
+                <Pencil className="w-3.5 h-3.5" /> <span>{t.edit}</span>
               </>
             )}
           </button>
@@ -489,7 +492,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-retro-day-accent dark:text-retro-night-accent" />
             <h3 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text uppercase tracking-wide">
-              Activity Calendar
+              {t.activityCalendar}
             </h3>
           </div>
           <div className="flex items-center gap-1">
@@ -500,7 +503,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text min-w-[100px] text-center">
-              {currentMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              {t.months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </span>
             <button
               onClick={() => navigateMonth(1)}
@@ -513,7 +516,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
 
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+          {t.dayNamesShort.map(day => (
             <div key={day} className="text-center text-[10px] font-bold text-retro-day-textMuted dark:text-retro-night-textMuted uppercase">
               {day}
             </div>
@@ -559,14 +562,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
         >
           <Check className="w-4 h-4" />
           {checkingIn
-            ? 'Saving...'
+            ? t.saving
             : selectedDate
             ? (() => {
-                const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const dateStr = selectedDate.toLocaleDateString(language === 'hu' ? 'hu-HU' : 'en-US', { month: 'short', day: 'numeric' });
                 const isLogged = workoutDates.includes(selectedDate.toISOString().split('T')[0]);
-                return isLogged ? `Remove Workout for ${dateStr}` : `Log Workout for ${dateStr}`;
+                return isLogged ? `${t.removeWorkoutFor} ${dateStr}` : `${t.logWorkoutFor} ${dateStr}`;
               })()
-            : 'Check-in Today\'s Workout'}
+            : t.checkInToday}
         </button>
       </div>
 
@@ -574,10 +577,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
       <div className="mt-5 p-4 rounded-2xl bg-retro-day-cardAlt/80 dark:bg-retro-night-cardAlt/60 border border-retro-day-border dark:border-retro-night-border">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-2">
           <UserCircle2 className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
-          <span>Squad Brotherhood</span>
+          <span>{t.squadBrotherhood}</span>
         </div>
         <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted leading-relaxed">
-          Log your personal bests, build custom workout plans, and compare progress with your friends on the squad leaderboard.
+          {language === 'hu'
+            ? 'Naplózd a személyes rekordjaidat, építs egyedi edzésterveket, és hasonlítsd össze a fejlődésedet a barátaiddal a ranglistán.'
+            : 'Log your personal bests, build custom workout plans, and compare progress with your friends on the squad leaderboard.'}
         </p>
       </div>
 
@@ -589,7 +594,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           className="w-full py-3 px-4 rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 font-semibold text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
         >
           <LogOut className="w-4 h-4" />
-          Log Out
+          {t.logOut}
         </button>
       </div>
     </div>

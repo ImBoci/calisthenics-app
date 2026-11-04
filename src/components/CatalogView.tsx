@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Exercise, ExerciseSuggestion, SECTIONS, ExerciseSection, MetricType, ADMIN_EMAIL, SECTION_LABELS } from '../lib/supabase';
-import { 
-  Plus, 
-  Search, 
-  BookOpen, 
-  Sparkles, 
-  Check, 
-  X, 
-  Clock, 
-  Repeat, 
-  MessageSquare, 
-  Trash2, 
+import { supabase, Exercise, ExerciseSuggestion, SECTIONS, ExerciseSection, MetricType, ADMIN_EMAIL } from '../lib/supabase';
+import {
+  Plus,
+  Search,
+  BookOpen,
+  Sparkles,
+  Check,
+  X,
+  Clock,
+  Repeat,
+  MessageSquare,
+  Trash2,
   Layers,
   ShieldCheck,
   AlertCircle
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { useLanguage, getSectionLabel } from '../context/LanguageContext';
 
 interface CatalogViewProps {
   currentUser: User | null;
@@ -23,6 +24,7 @@ interface CatalogViewProps {
 }
 
 export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggestionCountChange }) => {
+  const { t } = useLanguage();
   const isAdmin = currentUser?.email === ADMIN_EMAIL;
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -133,13 +135,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       setExercises(prev => [...prev, data]);
       setName('');
       setShowAddModal(false);
-      showToast(`Added "${data.name}" to catalog!`);
+      showToast(`${t.added}: "${data.name}"`);
     } catch (err: unknown) {
       console.error('Add exercise exception:', err);
       if (err instanceof Error) {
         setFormError(err.message);
       } else {
-        setFormError('Failed to add exercise');
+        setFormError(t.failedToAddExercise);
       }
     } finally {
       setSubmitting(false);
@@ -170,12 +172,12 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       setSuggestName('');
       setSuggestNotes('');
       setShowSuggestModal(false);
-      showToast('Suggestion sent to admin!');
+      showToast(t.suggestionSent);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setFormError(err.message);
       } else {
-        setFormError('Failed to send suggestion');
+        setFormError(t.failedToSendSuggestion);
       }
     } finally {
       setSubmitting(false);
@@ -207,7 +209,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       setSuggestions(updated);
       if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
 
-      showToast(`Approved "${sugg.exercise_name}"!`);
+      showToast(`${t.approved}: "${sugg.exercise_name}"`);
     } catch (err) {
       console.error('Error approving suggestion:', err);
     }
@@ -224,7 +226,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       const updated = suggestions.filter(s => s.id !== suggId);
       setSuggestions(updated);
       if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
-      showToast('Suggestion dismissed');
+      showToast(t.suggestionDismissed);
     } catch (err) {
       console.error('Error dismissing suggestion:', err);
     }
@@ -261,7 +263,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
       if (error) throw error;
       setExercises(data || []);
-      showToast(`Added ${data?.length || 0} classic calisthenics moves!`);
+      showToast(t.classicMovesSeeded);
     } catch (err) {
       console.error(err);
     } finally {
@@ -271,12 +273,12 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
   // Map DB values to display labels
   const FILTER_LABELS: Record<string, string> = {
-    'all': 'All',
-    'warmup': 'Warmup',
-    'joint_prep': 'Joint Prep',
-    'static': 'Static',
-    'dynamic': 'Dynamic',
-    'stretching': 'Stretching',
+    'all': t.filterAll,
+    'warmup': t.sectionLabelWarmup,
+    'joint_prep': t.sectionLabelJointPrep,
+    'static': t.sectionLabelStatic,
+    'dynamic': t.sectionLabelDynamic,
+    'stretching': t.sectionLabelStretching,
   };
 
   // Filter exercises
@@ -300,7 +302,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
           <BookOpen className="w-5 h-5" />
-          Exercise Catalog
+          {t.exerciseCatalog}
         </h2>
         {/* Action Button: Admin Add vs Friend Suggest */}
         <div className="flex items-center gap-2">
@@ -310,7 +312,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 <button
                   onClick={() => setShowSuggestionsDrawer(true)}
                   className="relative p-2.5 rounded-xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 active:scale-95 transition-all"
-                  title="View Friend Suggestions"
+                  title={t.viewFriendSuggestions}
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
@@ -323,7 +325,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 className="px-3 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all"
               >
                 <Plus className="w-4 h-4" />
-                Add
+                {t.add}
               </button>
             </>
           ) : (
@@ -332,7 +334,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               className="px-3 py-2 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border hover:bg-retro-day-accent hover:text-white text-retro-day-text dark:text-retro-night-text text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all"
             >
               <Sparkles className="w-3.5 h-3.5 text-retro-day-accent dark:text-retro-night-accent" />
-              Suggest
+              {t.suggest}
             </button>
           )}
         </div>
@@ -343,14 +345,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
         <div className="mb-3 px-3 py-1.5 rounded-xl bg-retro-day-accentSoft/60 dark:bg-retro-night-accentSoft/40 border border-retro-day-accent/30 dark:border-retro-night-accent/30 flex items-center justify-between text-[11px] text-retro-day-text dark:text-retro-night-text font-medium">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-retro-day-accent dark:text-retro-night-accent" />
-            Admin privileges active
+            {t.adminPrivileges}
           </span>
           {suggestions.length > 0 && (
             <button
               onClick={() => setShowSuggestionsDrawer(true)}
               className="underline font-bold text-retro-day-accent dark:text-retro-night-accent"
             >
-              {suggestions.length} pending suggestion{suggestions.length > 1 ? 's' : ''}
+              {suggestions.length} {t.pendingSuggestions}
             </button>
           )}
         </div>
@@ -363,7 +365,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search moves (e.g. Pull-ups, Handstand)..."
+          placeholder={t.searchMoves}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 text-sm focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent"
         />
         {searchQuery && (
@@ -405,12 +407,12 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
         <div className="p-8 text-center bg-retro-day-card dark:bg-retro-night-card rounded-3xl border border-retro-day-border dark:border-retro-night-border">
           <Layers className="w-10 h-10 mx-auto mb-3 text-retro-day-textMuted dark:text-retro-night-textMuted opacity-60" />
           <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text mb-1">
-            Catalog is empty
+            {t.catalogEmpty}
           </h3>
           <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mb-4">
-            {isAdmin 
-              ? 'Add your first exercise or seed classic calisthenics progressions with 1 click.' 
-              : 'Propose an exercise to the squad admin to get it added to the catalog.'}
+            {isAdmin
+              ? t.catalogEmptyAdminHint
+              : t.catalogEmptyFriendHint}
           </p>
 
           {isAdmin ? (
@@ -419,14 +421,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 onClick={() => setShowAddModal(true)}
                 className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow"
               >
-                + Add Exercise Manually
+                + {t.addExercise}
               </button>
               <button
                 onClick={handleSeedDefaults}
                 disabled={submitting}
                 className="py-2.5 px-4 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text font-bold text-xs hover:border-retro-day-accent transition-all"
               >
-                {submitting ? 'Seeding...' : '⚡ Seed 17 Classic Calisthenics Exercises'}
+                {submitting ? t.loading : `⚡ ${t.seedClassics}`}
               </button>
             </div>
           ) : (
@@ -434,13 +436,13 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               onClick={() => setShowSuggestModal(true)}
               className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow"
             >
-              + Suggest an Exercise
+              + {t.suggestExercise}
             </button>
           )}
         </div>
       ) : filteredExercises.length === 0 ? (
         <div className="p-6 text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted bg-retro-day-card dark:bg-retro-night-card rounded-2xl border border-retro-day-border dark:border-retro-night-border">
-          No exercises found matching &quot;{searchQuery}&quot; in {FILTER_LABELS[selectedSectionFilter]}.
+          {t.noExercisesFoundMatching} &quot;{searchQuery}&quot; in {FILTER_LABELS[selectedSectionFilter]}.
         </div>
       ) : (
         <div className="space-y-2">
@@ -455,18 +457,18 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted">
-                    {ex.section}
+                    {getSectionLabel(t, ex.section)}
                   </span>
                   <span className="text-[10px] font-mono text-retro-day-textMuted dark:text-retro-night-textMuted flex items-center gap-1">
                     {ex.metric_type === 'time' ? (
                       <>
                         <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        Hold (Seconds)
+                        {t.seconds}
                       </>
                     ) : (
                       <>
                         <Repeat className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
-                        Repetitions
+                        {t.metricReps}
                       </>
                     )}
                   </span>
@@ -493,7 +495,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
                 <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
-                  Add Exercise
+                  {t.addExercise}
                 </h3>
               </div>
               <button
@@ -514,21 +516,21 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
             <form onSubmit={handleAddExercise} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Exercise Name
+                  {t.exerciseName}
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Muscle-up, Front Lever"
+                  placeholder={t.exerciseNamePlaceholder}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Routine Section
+                  {t.routineSection}
                 </label>
                 <select
                   value={section}
@@ -536,14 +538,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                   className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                 >
                   {SECTIONS.map(s => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>{getSectionLabel(t, s)}</option>
                   ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Metric Type
+                  {t.metricType}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -556,7 +558,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                     }`}
                   >
                     <Repeat className="w-3.5 h-3.5" />
-                    Repetitions
+                    {t.metricReps}
                   </button>
                   <button
                     type="button"
@@ -568,7 +570,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    Hold Time (s)
+                    {t.metricTime} (s)
                   </button>
                 </div>
               </div>
@@ -579,14 +581,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                   onClick={() => setShowAddModal(false)}
                   className="flex-1 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
                 >
-                  {submitting ? 'Saving...' : 'Add to Catalog'}
+                  {submitting ? t.saving : t.addToCatalog}
                 </button>
               </div>
             </form>
@@ -604,7 +606,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
                 <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
-                  Suggest Exercise
+                  {t.suggestExercise}
                 </h3>
               </div>
               <button
@@ -628,21 +630,21 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
             <form onSubmit={handleSuggestExercise} className="space-y-3">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Exercise Name
+                  {t.exerciseName}
                 </label>
                 <input
                   type="text"
                   required
                   value={suggestName}
                   onChange={e => setSuggestName(e.target.value)}
-                  placeholder="e.g. Ring Dips, Archer Push-up"
+                  placeholder={t.suggestNamePlaceholder}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Section
+                  {t.routineSection}
                 </label>
                 <select
                   value={suggestSection}
@@ -650,14 +652,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                   className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                 >
                   {SECTIONS.map(s => (
-                    <option key={s} value={s}>{s}</option>
+                    <option key={s} value={s}>{getSectionLabel(t, s)}</option>
                   ))}
                 </select>
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Metric
+                  {t.metricType}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -670,7 +672,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                     }`}
                   >
                     <Repeat className="w-3.5 h-3.5" />
-                    Reps
+                    {t.metricReps}
                   </button>
                   <button
                     type="button"
@@ -682,20 +684,20 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5" />
-                    Hold Time
+                    {t.metricTime}
                   </button>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                  Note for Squad (Optional)
+                  {t.noteForSquad}
                 </label>
                 <input
                   type="text"
                   value={suggestNotes}
                   onChange={e => setSuggestNotes(e.target.value)}
-                  placeholder="e.g. Great progression for muscle-ups"
+                  placeholder={t.notePlaceholder}
                   className="w-full px-3.5 py-2 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                 />
               </div>
@@ -706,14 +708,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                   onClick={() => setShowSuggestModal(false)}
                   className="flex-1 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="flex-1 py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
                 >
-                  {submitting ? 'Sending...' : 'Send Proposal'}
+                  {submitting ? t.sending : t.sendProposal}
                 </button>
               </div>
             </form>
@@ -731,7 +733,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                 <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
-                  Incoming Suggestions ({suggestions.length})
+                  {t.incomingSuggestions} ({suggestions.length})
                 </h3>
               </div>
               <button
@@ -745,7 +747,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
             <div className="flex-1 overflow-y-auto py-3 space-y-3">
               {suggestions.length === 0 ? (
                 <div className="text-center py-10 text-xs text-retro-day-textMuted dark:text-retro-night-textMuted">
-                  All suggestions have been reviewed!
+                  {t.allSuggestionsReviewed}
                 </div>
               ) : (
                 suggestions.map(sugg => (
@@ -759,11 +761,11 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                           {sugg.exercise_name}
                         </h4>
                         <span className="text-[10px] text-retro-day-textMuted dark:text-retro-night-textMuted">
-                          From: {sugg.user_email}
+                          {t.from}: {sugg.user_email}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-surface dark:bg-retro-night-surface border border-retro-day-border dark:border-retro-night-border">
-                        {sugg.suggested_section} • {sugg.metric_type}
+                        {getSectionLabel(t, sugg.suggested_section)} • {sugg.metric_type === 'time' ? t.metricTime : t.metricReps}
                       </div>
                     </div>
 
@@ -779,14 +781,14 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                         className="py-1.5 px-3 rounded-xl border border-rose-300 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1 active:scale-95"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Dismiss
+                        {t.dismiss}
                       </button>
                       <button
                         onClick={() => handleApproveSuggestion(sugg)}
                         className="flex-1 py-1.5 px-3 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center justify-center gap-1 shadow-sm active:scale-95"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Approve &amp; Add to Catalog
+                        {t.approveAddToCatalog}
                       </button>
                     </div>
                   </div>
@@ -798,7 +800,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               onClick={() => setShowSuggestionsDrawer(false)}
               className="w-full mt-2 py-2.5 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
             >
-              Close
+              {t.close}
             </button>
           </div>
         </div>

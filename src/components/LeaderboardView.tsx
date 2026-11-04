@@ -13,6 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { useLanguage, getSectionLabel } from '../context/LanguageContext';
 
 interface LeaderboardViewProps {
   currentUser: User | null;
@@ -29,6 +30,7 @@ interface RankedPB extends UserPB {
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, onNavigateToPBs }) => {
+  const { t } = useLanguage();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [allPbs, setAllPbs] = useState<UserPB[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, { display_name: string; username: string; avatar_url?: string }>>({});
@@ -38,9 +40,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
   // Map DB values to display labels (competitive categories only)
   const FILTER_LABELS: Record<string, string> = {
-    'all': 'All',
-    'static': 'Static',
-    'dynamic': 'Dynamic',
+    'all': t.filterAll,
+    'static': t.filterStatic,
+    'dynamic': t.filterDynamic,
   };
   const [selectedExercise, setSelectedExercise] = useState<string>('All');
 
@@ -105,10 +107,10 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
     const isCurrent = pb.user_id === currentUser?.id;
     const profile = profileMap[pb.user_id];
-    let displayName = 'Squad Mate';
+    let displayName = t.squadMate;
 
     if (isCurrent) {
-      displayName = currentUser?.user_metadata?.display_name || 'You';
+      displayName = currentUser?.user_metadata?.display_name || t.you;
     } else if (profile?.display_name) {
       displayName = profile.display_name;
     } else if (profile?.username) {
@@ -117,7 +119,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
     // Match exercise from exercises array by exercise_id
     const exercise = exercises.find(e => e.id === pb.exercise_id);
-    const exerciseName = exercise?.name || 'Unknown Exercise';
+    const exerciseName = exercise?.name || t.unknownExercise;
     const exerciseMetric = exercise?.metric_type || 'reps';
     const exerciseSection = exercise?.section || 'static';
     const avatarUrl = profile?.avatar_url;
@@ -181,14 +183,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
           <Crown className="w-5 h-5 text-amber-500 fill-amber-500" />
-          Leaderboard
+          {t.leaderboard}
         </h2>
         <button
           onClick={onNavigateToPBs}
           className="px-3 py-1.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
         >
           <Plus className="w-3.5 h-3.5" />
-          Log PB
+          {t.logPB}
         </button>
       </div>
 
@@ -199,7 +201,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search moves on scoreboard..."
+          placeholder={t.searchScoreboard}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 text-sm focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent"
         />
         {searchQuery && (
@@ -219,7 +221,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           onChange={e => setSelectedExercise(e.target.value)}
           className="w-full px-3 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-sm font-bold focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
         >
-          <option value="All">All Competitive Exercises</option>
+          <option value="All">{t.allCompetitiveExercises}</option>
           {competitiveExercises.map(ex => (
             <option key={ex.id} value={ex.id}>{ex.name}</option>
           ))}
@@ -255,15 +257,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         <div className="p-8 text-center bg-retro-day-card dark:bg-retro-night-card rounded-3xl border border-retro-day-border dark:border-retro-night-border">
           <Trophy className="w-10 h-10 mx-auto mb-3 text-retro-day-textMuted dark:text-retro-night-textMuted opacity-60" />
           <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text mb-1">
-            No exercises found
+            {t.noExercisesFound}
           </h3>
           <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted">
-            Add or seed exercises in the Catalog tab to start tracking squad rankings!
+            {t.noExercisesFoundHint}
           </p>
         </div>
       ) : filteredExercises.length === 0 ? (
         <div className="p-6 text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted bg-retro-day-card dark:bg-retro-night-card rounded-2xl border border-retro-day-border dark:border-retro-night-border">
-          No exercises matching &quot;{searchQuery}&quot;.
+          {t.noSearchResults}
         </div>
       ) : (
         <div className="space-y-3.5">
@@ -285,18 +287,18 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                   <div>
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted">
-                        {exerciseSection}
+                        {getSectionLabel(t, exerciseSection)}
                       </span>
                       <span className="text-[10px] font-mono text-retro-day-textMuted dark:text-retro-night-textMuted flex items-center gap-1">
                         {exerciseMetric === 'time' ? (
                           <>
                             <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                            Hold (s)
+                            {t.holdDuration}
                           </>
                         ) : (
                           <>
                             <Repeat className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
-                            Reps
+                            {t.reps}
                           </>
                         )}
                       </span>
@@ -308,7 +310,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
                   <span className="text-xs font-mono font-bold text-retro-day-accent dark:text-retro-night-accent flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    {rankings.length} {rankings.length === 1 ? 'record' : 'records'}
+                    {rankings.length} {rankings.length === 1 ? t.record : t.records}
                   </span>
                 </div>
 
@@ -368,16 +370,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
                           <div className="min-w-0">
                             <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text truncate block">
-                              {rank.display_name} {rank.isCurrentUser && <span className="text-retro-day-accent dark:text-retro-night-accent font-semibold text-[11px]">(You)</span>}
+                              {rank.display_name} {rank.isCurrentUser && <span className="text-retro-day-accent dark:text-retro-night-accent font-semibold text-[11px]">({t.you})</span>}
                             </span>
                             {rank.is_assisted ? (
                               <span className="text-[10px] text-amber-800 dark:text-amber-300 font-medium truncate block">
-                                Assisted: {rank.assist_notes || 'Band'}
+                                {t.assisted}: {rank.assist_notes || 'Band'}
                               </span>
                             ) : (
                               <span className="text-[10px] text-retro-day-textMuted dark:text-retro-night-textMuted flex items-center gap-0.5 font-medium">
                                 <ShieldCheck className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
-                                Bodyweight
+                                {t.bodyweight}
                               </span>
                             )}
                           </div>
@@ -386,7 +388,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                         {/* PB Score */}
                         <div className="text-right shrink-0">
                           <span className="text-sm font-extrabold font-mono text-retro-day-text dark:text-retro-night-text block">
-                            {rank.best_value} {rank.exercise_metric_type === 'time' ? 's' : 'reps'}
+                            {rank.best_value} {rank.exercise_metric_type === 'time' ? t.sec : t.reps}
                           </span>
                         </div>
                       </div>
@@ -401,7 +403,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           {exercisesWithoutRecords.length > 0 && (
             <div className="mt-6 pt-4 border-t border-retro-day-border dark:border-retro-night-border">
               <span className="text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-2">
-                Uncontested Moves ({exercisesWithoutRecords.length})
+                {t.contestedMoves} ({exercisesWithoutRecords.length})
               </span>
               <div className="space-y-1.5">
                 {exercisesWithoutRecords.slice(0, 5).map(ex => (
@@ -417,7 +419,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                       className="text-xs font-bold text-retro-day-accent dark:text-retro-night-accent hover:underline flex items-center gap-1 shrink-0"
                     >
                       <Plus className="w-3 h-3" />
-                      Set 1st Record
+                      {t.setFirstRecord}
                     </button>
                   </div>
                 ))}

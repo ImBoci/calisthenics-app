@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Exercise, WorkoutPlan, SECTIONS, ExerciseSection, SECTION_LABELS } from '../lib/supabase';
+import { supabase, Exercise, WorkoutPlan, SECTIONS, ExerciseSection } from '../lib/supabase';
 import { 
   Dumbbell, 
   Plus, 
@@ -16,6 +16,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { useLanguage, getSectionLabel } from '../context/LanguageContext';
 
 interface WorkoutsViewProps {
   currentUser: User | null;
@@ -23,6 +24,7 @@ interface WorkoutsViewProps {
 }
 
 export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavigateToCatalog: _onNavigateToCatalog }) => {
+  const { t } = useLanguage();
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [catalogExercises, setCatalogExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,7 +194,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
 
       if (error) throw error;
       setCatalogExercises(data || []);
-      showToast(`Loaded ${data?.length || 0} moves into catalog!`);
+      showToast(`${data?.length || 0} ${t.movesLoaded}`);
     } catch (err) {
       console.error('Error seeding moves:', err);
     } finally {
@@ -204,7 +206,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
     e.preventDefault();
     if (!newTitle.trim() || !currentUser) return;
     if (selectedExerciseIds.length === 0) {
-      setBuilderError('Please select at least 1 exercise for your routine');
+      setBuilderError(t.selectAtLeastOne);
       return;
     }
 
@@ -270,12 +272,12 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       setNewTitle('');
       setSelectedExerciseIds([]);
       setActivePlan(fullPlan);
-      showToast(`Created routine "${fullPlan.title}"!`);
+      showToast(`${t.routineCreated}: "${fullPlan.title}"!`);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setBuilderError(err.message);
       } else {
-        setBuilderError('Failed to save workout plan');
+        setBuilderError(t.failedToSavePlan);
       }
     } finally {
       setSavingPlan(false);
@@ -283,7 +285,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
   };
 
   const handleDeletePlan = async (planId: string) => {
-    if (!confirm('Are you sure you want to delete this routine?')) return;
+    if (!confirm(t.confirmDeleteRoutine)) return;
     try {
       const { error } = await supabase
         .from('workout_plans')
@@ -296,7 +298,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       if (activePlan?.id === planId) {
         setActivePlan(null);
       }
-      showToast('Routine deleted');
+      showToast(t.routineDeleted);
     } catch (err) {
       console.error('Error deleting plan:', err);
     }
@@ -314,10 +316,10 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
           plan_id: planId,
         });
       if (error) throw error;
-      showToast('Workout logged! 💪');
+      showToast(t.workoutLogged);
     } catch (err) {
       console.error('Error logging workout:', err);
-      showToast('Could not log workout');
+      showToast(t.couldNotLogWorkout);
     }
   };
 
@@ -367,7 +369,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               className="py-1.5 px-3 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-xs font-bold flex items-center gap-1 active:scale-95"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              All Routines
+              {t.allRoutines}
             </button>
 
             <div className="flex items-center gap-2">
@@ -404,7 +406,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                   return (
                     <div>
                       <div className="flex justify-between text-xs font-mono font-bold text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
-                        <span>Progress</span>
+                        <span>{t.progress}</span>
                         <span>{completed}/{total} ({pct}%)</span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt overflow-hidden border border-retro-day-border/50">
@@ -426,7 +428,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
             className="w-full py-3 rounded-2xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all"
           >
             <CheckCircle2 className="w-4 h-4" />
-            Mark as Completed
+            {t.markAsCompleted}
           </button>
 
           {/* Grouped Checklist */}
@@ -449,10 +451,10 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                           {secIdx + 1}
                         </span>
                         <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text uppercase tracking-wide">
-                          {sec}
+                          {getSectionLabel(t, sec)}
                         </h4>
                         <span className="ml-auto text-[11px] text-retro-day-textMuted dark:text-retro-night-textMuted font-mono">
-                          {list.length} moves
+                          {list.length} {t.moves}
                         </span>
                       </div>
 
@@ -489,7 +491,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                               </div>
 
                               <span className="text-[10px] font-mono shrink-0 px-2 py-0.5 rounded-full bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-textMuted dark:text-retro-night-textMuted border border-retro-day-border/60">
-                                {ex.metric_type === 'time' ? 'Hold' : 'Reps'}
+                                {ex.metric_type === 'time' ? t.hold : t.reps}
                               </span>
                             </button>
                           );
@@ -508,7 +510,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
           {/* Centered green header */}
           <h2 className="text-center text-lg font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent mb-4 flex items-center justify-center gap-2">
             <Dumbbell className="w-5 h-5" />
-            Workout Routines
+            {t.workoutRoutines}
           </h2>
 
           {loading ? (
@@ -519,16 +521,16 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
             <div className="p-8 text-center bg-retro-day-card dark:bg-retro-night-card rounded-3xl border border-retro-day-border dark:border-retro-night-border">
               <Layers className="w-10 h-10 mx-auto mb-3 text-retro-day-textMuted dark:text-retro-night-textMuted opacity-60" />
               <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text mb-1">
-                No Workout Plans Yet
+                {t.noWorkoutPlans}
               </h3>
               <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mb-4">
-                Build your first routine organized into Warmup, Joint Prep, Static, Dynamic, and Stretching!
+                {t.buildFirstRoutineHint}
               </p>
               <button
                 onClick={openBuilder}
                 className="py-2.5 px-4 rounded-xl bg-retro-day-accent text-white font-bold text-xs shadow-md"
               >
-                + Build Custom Routine
+                + {t.buildCustomRoutine}
               </button>
             </div>
           ) : (
@@ -539,7 +541,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                 className="w-full py-3 rounded-2xl border-2 border-dashed border-retro-day-accent/40 dark:border-retro-night-accent/40 text-retro-day-accent dark:text-retro-night-accent text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all hover:bg-retro-day-accentSoft/30 dark:hover:bg-retro-night-accentSoft/20"
               >
                 <Plus className="w-4 h-4" />
-                New Routine
+                {t.newRoutine}
               </button>
 
               {plans.map(plan => {
@@ -555,11 +557,11 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                           {plan.title}
                         </h4>
                         <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mt-1">
-                          {count} exercises • 5 sections
+                          {count} {t.exercises} • 5 {t.sectionsLabel}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 text-retro-day-accent dark:text-retro-night-accent font-bold text-xs">
-                        <span>Start</span>
+                        <span>{t.start}</span>
                         <ChevronRight className="w-4 h-4" />
                       </div>
                     </div>
@@ -569,7 +571,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                       className="mt-2 w-full py-2 rounded-xl bg-retro-day-accentSoft dark:bg-retro-night-accentSoft text-retro-day-accent dark:text-retro-night-accent text-xs font-bold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-retro-day-accent/20 dark:border-retro-night-accent/20"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      Mark as Completed
+                      {t.markAsCompleted}
                     </button>
                   </div>
                 );
@@ -590,7 +592,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               <div className="flex items-center gap-2">
                 <Dumbbell className="w-5 h-5 text-retro-day-accent dark:text-retro-night-accent" />
                 <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
-                  New Workout Routine
+                  {t.newWorkoutRoutine}
                 </h3>
               </div>
               <button
@@ -613,22 +615,22 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                 {/* Routine Title */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                    Routine Name
+                    {t.routineName}
                   </label>
                   <input
                     type="text"
                     required
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value)}
-                    placeholder="e.g. Monday Pull & Handstand"
+                    placeholder={t.routineNamePlaceholder}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                   />
                 </div>
 
                 {/* Select Exercises header */}
                 <div className="flex items-center justify-between text-xs font-bold text-retro-day-textMuted dark:text-retro-night-textMuted">
-                  <span className="uppercase tracking-wider">Select Exercises ({selectedExerciseIds.length})</span>
-                  <span className="text-[11px] font-normal italic">Grouped by 5 sections</span>
+                  <span className="uppercase tracking-wider">{t.selectExercises} ({selectedExerciseIds.length})</span>
+                  <span className="text-[11px] font-normal italic">{t.groupedBySections}</span>
                 </div>
 
                 {/* If catalog is empty inside builder modal */}
@@ -636,10 +638,10 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                   <div className="p-6 text-center bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-2xl border border-retro-day-border dark:border-retro-night-border">
                     <Sparkles className="w-8 h-8 mx-auto mb-2 text-retro-day-accent dark:text-retro-night-accent" />
                     <p className="text-xs font-bold text-retro-day-text dark:text-retro-night-text mb-1">
-                      No exercises in catalog yet
+                      {t.noExercisesInCatalog}
                     </p>
                     <p className="text-[11px] text-retro-day-textMuted dark:text-retro-night-textMuted mb-3">
-                      Load starter calisthenics moves now or add custom ones in the Catalog tab.
+                      {t.loadStarterMovesHint}
                     </p>
                     <button
                       type="button"
@@ -647,7 +649,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                       disabled={seeding}
                       className="w-full py-2.5 px-4 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
                     >
-                      {seeding ? 'Loading moves...' : '⚡ Load Starter Calisthenics Moves'}
+                      {seeding ? t.loading : `⚡ ${t.loadStarterMoves}`}
                     </button>
                   </div>
                 ) : (
@@ -663,7 +665,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                             <span className="w-4 h-4 rounded-full bg-retro-day-accent text-white text-[10px] font-mono flex items-center justify-center">
                               {idx + 1}
                             </span>
-                            <span>{SECTION_LABELS[sec]}</span>
+                            <span>{getSectionLabel(t, sec)}</span>
                             <span className="ml-auto text-[10px] text-retro-day-textMuted font-mono">
                               {moves.filter(m => selectedExerciseIds.includes(m.id)).length}/{moves.length}
                             </span>
@@ -706,14 +708,14 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                   onClick={() => setShowBuilder(false)}
                   className="flex-1 py-3 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={savingPlan || catalogExercises.length === 0}
                   className="flex-1 py-3 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs shadow-md disabled:opacity-50"
                 >
-                  {savingPlan ? 'Saving...' : `Save Routine (${selectedExerciseIds.length})`}
+                  {savingPlan ? t.saving : `${t.saveRoutine} (${selectedExerciseIds.length})`}
                 </button>
               </div>
             </form>

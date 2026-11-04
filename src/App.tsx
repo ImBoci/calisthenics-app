@@ -9,9 +9,12 @@ import { WorkoutsView } from './components/WorkoutsView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { Session } from '@supabase/supabase-js';
+import { Languages } from 'lucide-react';
 
 function MainApp() {
+  const { language, setLanguage, t } = useLanguage();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentTab, setCurrentTab] = useState<NavTab>('workouts');
@@ -89,7 +92,16 @@ function MainApp() {
               Chalk &amp; Timber
             </span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setLanguage(language === 'en' ? 'hu' : 'en')}
+              className="px-2.5 py-1 rounded-lg bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-[10px] font-bold text-retro-day-text dark:text-retro-night-text hover:border-retro-day-accent active:scale-95 transition-all flex items-center gap-1"
+            >
+              <Languages className="w-3 h-3" />
+              {language === 'en' ? 'EN' : 'HU'}
+            </button>
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Unconfigured Alert Banner */}
@@ -151,8 +163,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <MainApp />
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <MainApp />
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }

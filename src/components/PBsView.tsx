@@ -15,12 +15,14 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
+import { useLanguage, getSectionLabel } from '../context/LanguageContext';
 
 interface PBsViewProps {
   currentUser: User | null;
 }
 
 export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
+  const { t } = useLanguage();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [userPbs, setUserPbs] = useState<Record<string, UserPB>>({});
   const [loading, setLoading] = useState(true);
@@ -29,9 +31,9 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
   // Map DB values to display labels (competitive categories only)
   const FILTER_LABELS: Record<string, string> = {
-    'all': 'All',
-    'static': 'Static',
-    'dynamic': 'Dynamic',
+    'all': t.filterAll,
+    'static': t.filterStatic,
+    'dynamic': t.filterDynamic,
   };
 
   // Modal State
@@ -107,7 +109,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
     if (!selectedExercise || !currentUser) return;
     const num = parseFloat(bestValue);
     if (isNaN(num) || num <= 0) {
-      setModalError('Please enter a valid positive number');
+      setModalError(t.invalidNumber);
       return;
     }
 
@@ -151,12 +153,12 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
       setUserPbs(prev => ({ ...prev, [selectedExercise.id]: savedRecord }));
       setSelectedExercise(null);
-      showToast(`Personal Best updated for ${selectedExercise.name}! 🔥`);
+      showToast(`${t.pbUpdated}: ${selectedExercise.name}! 🔥`);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setModalError(err.message);
       } else {
-        setModalError('Could not save record');
+        setModalError(t.couldNotSaveRecord);
       }
     } finally {
       setSaving(false);
@@ -187,13 +189,13 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
           <Trophy className="w-5 h-5" />
-          Personal Bests
+          {t.personalBests}
         </h2>
         {/* Total PBs Badge */}
         <div className="px-3 py-1.5 rounded-2xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border flex items-center gap-1.5 shadow-sm">
           <Flame className="w-4 h-4 text-amber-500 fill-amber-500" />
           <span className="text-xs font-bold font-mono text-retro-day-text dark:text-retro-night-text">
-            {totalLogged} PBs
+            {totalLogged} {t.pbs}
           </span>
         </div>
       </div>
@@ -205,7 +207,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Filter moves for PB tracking..."
+          placeholder={t.searchPBs}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 text-sm focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent"
         />
         {searchQuery && (
@@ -247,15 +249,15 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
         <div className="p-8 text-center bg-retro-day-card dark:bg-retro-night-card rounded-3xl border border-retro-day-border dark:border-retro-night-border">
           <Trophy className="w-10 h-10 mx-auto mb-3 text-retro-day-textMuted dark:text-retro-night-textMuted opacity-60" />
           <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text mb-1">
-            No exercises in catalog
+            {t.noExercisesCatalogShort}
           </h3>
           <p className="text-xs text-retro-day-textMuted dark:text-retro-night-textMuted mb-4">
-            Visit the Catalog tab to add or seed calisthenics moves first.
+            {t.noPBsHint}
           </p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="p-6 text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted bg-retro-day-card dark:bg-retro-night-card rounded-2xl border border-retro-day-border dark:border-retro-night-border">
-          No exercises found matching your search.
+          {t.noSearchResults}
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -286,25 +288,25 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-retro-day-accentSoft dark:bg-retro-night-accentSoft border border-retro-day-accent/30 dark:border-retro-night-accent/30 text-retro-day-text dark:text-retro-night-text text-xs font-bold font-mono">
                           <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                           <span>
-                            {pb.best_value} {ex.metric_type === 'time' ? 'Seconds' : 'Reps'}
+                            {pb.best_value} {ex.metric_type === 'time' ? t.seconds : t.reps}
                           </span>
                         </div>
 
                         {/* Assistance Badge */}
                         {pb.is_assisted ? (
                           <span className="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-[10px] font-semibold">
-                            Assisted: {pb.assist_notes || 'Band'}
+                            {t.assisted}: {pb.assist_notes || 'Band'}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-lg bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted text-[10px] font-semibold flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-retro-day-accent dark:text-retro-night-accent" />
-                            Bodyweight
+                            {t.bodyweight}
                           </span>
                         )}
                       </div>
                     ) : (
                       <span className="text-[11px] text-retro-day-textMuted/70 dark:text-retro-night-textMuted/60 italic">
-                        No record logged yet
+                        {t.noRecordLogged}
                       </span>
                     )}
                   </div>
@@ -323,12 +325,12 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                     {hasPB ? (
                       <>
                         <Sparkles className="w-3.5 h-3.5 text-retro-day-accent dark:text-retro-night-accent" />
-                        Update
+                        {t.update}
                       </>
                     ) : (
                       <>
                         <Plus className="w-3.5 h-3.5" />
-                        Log PB
+                        {t.logPB}
                       </>
                     )}
                   </button>
@@ -350,7 +352,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                 <Trophy className="w-5 h-5 text-amber-500 fill-amber-500" />
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted">
-                    {selectedExercise.section}
+                    {getSectionLabel(t, selectedExercise.section)}
                   </span>
                   <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text leading-tight">
                     {selectedExercise.name}
@@ -377,8 +379,8 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1.5">
                   {selectedExercise.metric_type === 'time'
-                    ? 'Hold Duration (Seconds)'
-                    : 'Reps Completed'}
+                    ? t.holdDuration
+                    : t.repsCompleted}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-retro-day-textMuted dark:text-retro-night-textMuted">
@@ -399,7 +401,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                     className="w-full pl-10 pr-16 py-3 rounded-2xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base font-mono font-bold focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-retro-day-textMuted dark:text-retro-night-textMuted uppercase font-mono">
-                    {selectedExercise.metric_type === 'time' ? 'sec' : 'reps'}
+                    {selectedExercise.metric_type === 'time' ? t.sec : t.reps}
                   </span>
                 </div>
               </div>
@@ -409,10 +411,10 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="pr-2">
                     <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text block">
-                      Assisted Movement
+                      {t.assistedMovement}
                     </span>
                     <span className="text-[11px] text-retro-day-textMuted dark:text-retro-night-textMuted block">
-                      Using resistance band, chair, or partner
+                      {t.usingResistance}
                     </span>
                   </div>
                   <input
@@ -427,13 +429,13 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                 {isAssisted && (
                   <div className="mt-3 pt-3 border-t border-retro-day-border/70 dark:border-retro-night-border/70 animate-in fade-in duration-150">
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
-                      Assistance Details
+                      {t.assistanceDetails}
                     </label>
                     <input
                       type="text"
                       value={assistNotes}
                       onChange={e => setAssistNotes(e.target.value)}
-                      placeholder="e.g. Heavy black band, Light red band"
+                      placeholder={t.assistNotesPlaceholder}
                       className="w-full px-3 py-2 rounded-xl bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text text-base placeholder-retro-day-textMuted/50 text-xs focus:outline-none focus:ring-2 focus:ring-retro-day-accent"
                     />
                   </div>
@@ -447,7 +449,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                   onClick={() => setSelectedExercise(null)}
                   className="flex-1 py-3 rounded-xl border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted font-bold text-xs"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
@@ -459,7 +461,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      Save Record
+                      {t.saveRecord}
                     </>
                   )}
                 </button>
