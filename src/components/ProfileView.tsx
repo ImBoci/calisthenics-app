@@ -31,6 +31,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [checkingIn, setCheckingIn] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Editable fields
@@ -156,20 +157,36 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
     if (!currentUser) return;
     setCheckingIn(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const { error } = await supabase
-        .from('workout_logs')
-        .insert({
-          user_id: currentUser.id,
-          completed_at: today,
-        });
-      if (error) throw error;
-      setFeedbackMsg('Workout checked in! 💪');
+      const dateToLog = selectedDate || new Date();
+      const dateStr = dateToLog.toISOString().split('T')[0];
+      const existingLog = workoutDates.includes(dateStr);
+
+      if (existingLog) {
+        // Remove workout log
+        const { error } = await supabase
+          .from('workout_logs')
+          .delete()
+          .eq('user_id', currentUser.id)
+          .eq('completed_at', dateStr);
+        if (error) throw error;
+        setFeedbackMsg('Workout removed for this date');
+      } else {
+        // Add workout log
+        const { error } = await supabase
+          .from('workout_logs')
+          .insert({
+            user_id: currentUser.id,
+            completed_at: dateStr,
+          });
+        if (error) throw error;
+        setFeedbackMsg('Workout logged! 💪');
+      }
       await fetchWorkoutDates();
+      setSelectedDate(null);
       setTimeout(() => setFeedbackMsg(null), 2500);
     } catch (err) {
-      console.error('Error checking in workout:', err);
-      setFeedbackMsg('Could not check in workout');
+      console.error('Error updating workout log:', err);
+      setFeedbackMsg('Could not update workout log');
     } finally {
       setCheckingIn(false);
     }
@@ -201,9 +218,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
 
   const isToday = (day: number) => {
     const today = new Date();
-    return day === today.getDate() && 
-           currentMonth.getMonth() === today.getMonth() && 
+    return day === today.getDate() &&
+           currentMonth.getMonth() === today.getMonth() &&
            currentMonth.getFullYear() === today.getFullYear();
+  };
+
+  const isFutureDate = (day: number) => {
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date > today;
+  };
+
+  const isSelectedDate = (day: number) => {
+    if (!selectedDate) return false;
+    return day === selectedDate.getDate() &&
+           currentMonth.getMonth() === selectedDate.getMonth() &&
+           currentMonth.getFullYear() === selectedDate.getFullYear();
+  };
+
+  const handleDateClick = (day: number) => {
+    if (isFutureDate(day)) return;
+    const clickedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    setSelectedDate(clickedDate);
   };
 
   const navigateMonth = (direction: number) => {
@@ -274,7 +311,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
   }
 
   return (
-    <div className="w-full max-w-md mx-auto pt-2 pb-6">
+    <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Athlete Card Header */}
       <div className="mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex items-center justify-center gap-2">
@@ -489,19 +526,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
             }
             const hasWorkout = isWorkoutDay(day);
             const today = isToday(day);
+            const future = isFutureDate(day);
+            const selected = isSelectedDate(day);
             return (
-              <div
+              <button
                 key={idx}
+                onClick={() => handleDateClick(day)}
+                disabled={future}
                 className={`aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
-                  hasWorkout
+                  future
+                    ? 'text-retro-day-textMuted/30 dark:text-retro-night-textMuted/30 cursor-not-allowed'
+                    : hasWorkout
                     ? 'bg-retro-day-accent dark:bg-retro-night-accent text-white'
+                    : selected
+                    ? 'bg-retro-day-accentSoft/70 dark:bg-retro-night-accentSoft/50 text-retro-day-text dark:text-retro-night-text border-2 border-retro-day-accent dark:border-retro-night-accent'
                     : today
                     ? 'bg-retro-day-accentSoft/50 dark:bg-retro-night-accentSoft/30 text-retro-day-text dark:text-retro-night-text border border-retro-day-accent/30'
-                    : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted'
+                    : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt text-retro-day-textMuted dark:text-retro-night-textMuted hover:bg-retro-day-cardAlt/80'
                 }`}
               >
                 {day}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -509,11 +554,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
         {/* Check-in Button */}
         <button
           onClick={handleCheckIn}
-          disabled={checkingIn || isToday(new Date().getDate()) && workoutDates.includes(new Date().toISOString().split('T')[0])}
+          disabled={checkingIn}
           className="mt-3 w-full py-2.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] transition-all disabled:opacity-50"
         >
           <Check className="w-4 h-4" />
-          {checkingIn ? 'Checking in...' : 'Check-in Today\'s Workout'}
+          {checkingIn
+            ? 'Saving...'
+            : selectedDate
+            ? (() => {
+                const dateStr = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const isLogged = workoutDates.includes(selectedDate.toISOString().split('T')[0]);
+                return isLogged ? `Remove Workout for ${dateStr}` : `Log Workout for ${dateStr}`;
+              })()
+            : 'Check-in Today\'s Workout'}
         </button>
       </div>
 

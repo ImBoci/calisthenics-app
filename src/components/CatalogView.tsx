@@ -29,7 +29,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
   const [suggestions, setSuggestions] = useState<ExerciseSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('All');
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('all');
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -269,15 +269,25 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
     }
   };
 
+  // Map DB values to display labels
+  const FILTER_LABELS: Record<string, string> = {
+    'all': 'All',
+    'warmup': 'Warmup',
+    'joint_prep': 'Joint Prep',
+    'static': 'Static',
+    'dynamic': 'Dynamic',
+    'stretching': 'Stretching',
+  };
+
   // Filter exercises
   const filteredExercises = exercises.filter(ex => {
     const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSection = selectedSectionFilter === 'All' || ex.section === selectedSectionFilter;
+    const matchesSection = selectedSectionFilter === 'all' || ex.section === selectedSectionFilter;
     return matchesSearch && matchesSection;
   });
 
   return (
-    <div className="w-full max-w-md mx-auto pt-2 pb-24">
+    <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Toast Notification */}
       {successToast && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-retro-day-accent dark:bg-retro-night-accent text-white px-4 py-2 rounded-2xl shadow-lg text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
@@ -368,7 +378,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
       {/* Section Filter Pills (Horizontal Scroll) */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none text-xs">
-        {['All', ...SECTIONS].map(sec => {
+        {(['all', ...SECTIONS] as const).map(sec => {
           const isSelected = selectedSectionFilter === sec;
           return (
             <button
@@ -380,7 +390,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                   : 'bg-retro-day-card dark:bg-retro-night-card text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border hover:text-retro-day-text'
               }`}
             >
-              {sec}
+              {FILTER_LABELS[sec]}
             </button>
           );
         })}
@@ -430,7 +440,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
         </div>
       ) : filteredExercises.length === 0 ? (
         <div className="p-6 text-center text-xs text-retro-day-textMuted dark:text-retro-night-textMuted bg-retro-day-card dark:bg-retro-night-card rounded-2xl border border-retro-day-border dark:border-retro-night-border">
-          No exercises found matching &quot;{searchQuery}&quot; in {selectedSectionFilter}.
+          No exercises found matching &quot;{searchQuery}&quot; in {FILTER_LABELS[selectedSectionFilter]}.
         </div>
       ) : (
         <div className="space-y-2">

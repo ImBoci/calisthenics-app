@@ -123,7 +123,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto py-4">
+    <div className="w-full max-w-sm mx-auto py-4 overflow-hidden">
       {/* Brand Header */}
       <div className="text-center mb-6">
         <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-3xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-2.5">

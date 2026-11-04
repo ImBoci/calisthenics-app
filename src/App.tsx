@@ -78,9 +78,9 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200 flex flex-col justify-between">
+    <div className="h-[100dvh] bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200 flex flex-col justify-between overflow-hidden">
       {/* Centered mobile-first container */}
-      <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen relative">
+      <div className="w-full max-w-md mx-auto flex flex-col flex-1 h-[100dvh] relative overflow-hidden">
         {/* Safe-area Top Header - Stays inside mobile column on both desktop & mobile */}
         <header className="w-full px-4 pt-safe pb-2 flex items-center justify-between z-30">
           <div className="flex items-center gap-2">
@@ -100,17 +100,17 @@ function MainApp() {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col justify-center px-4 pb-6 sm:pb-12">
+        <main className="flex-1 flex flex-col justify-center px-4 pb-6 sm:pb-12 overflow-hidden">
           {!session ? (
-            <div className="w-full my-auto -translate-y-4 sm:-translate-y-8 transition-transform">
+            <div className="w-full h-[100dvh] flex flex-col justify-center items-center overflow-hidden -translate-y-4 sm:-translate-y-8 transition-transform">
               <LoginRegister onAuthSuccess={handleAuthSuccess} />
             </div>
           ) : (
-            <div className="flex-1">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {currentTab === 'workouts' && (
-                <WorkoutsView 
-                  currentUser={session.user} 
-                  onNavigateToCatalog={() => setCurrentTab('catalog')} 
+                <WorkoutsView
+                  currentUser={session.user}
+                  onNavigateToCatalog={() => setCurrentTab('catalog')}
                 />
               )}
 
@@ -126,9 +126,9 @@ function MainApp() {
               )}
 
               {currentTab === 'catalog' && (
-                <CatalogView 
-                  currentUser={session.user} 
-                  onSuggestionCountChange={setSuggestionCount} 
+                <CatalogView
+                  currentUser={session.user}
+                  onSuggestionCountChange={setSuggestionCount}
                 />
               )}
 
@@ -136,9 +136,9 @@ function MainApp() {
                 <ProfileView onLogout={handleLogout} currentUser={session.user} />
               )}
 
-              <BottomNav 
-                currentTab={currentTab} 
-                onTabChange={setCurrentTab} 
+              <BottomNav
+                currentTab={currentTab}
+                onTabChange={setCurrentTab}
                 suggestionCount={session.user.email === ADMIN_EMAIL ? suggestionCount : 0}
               />
             </div>

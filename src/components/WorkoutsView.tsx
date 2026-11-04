@@ -165,23 +165,23 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
   const handleSeedDefaults = async () => {
     setSeeding(true);
     const defaults = [
-      { name: 'Jumping Jacks', section: 'Warmup', metric_type: 'time' },
-      { name: 'Arm Circles & Crosses', section: 'Warmup', metric_type: 'time' },
-      { name: 'Wrist Rotations & Flexions', section: 'Joint Preparation', metric_type: 'time' },
-      { name: 'Shoulder Dislocates', section: 'Joint Preparation', metric_type: 'reps' },
-      { name: 'Scapular Pull-ups', section: 'Joint Preparation', metric_type: 'reps' },
-      { name: 'Handstand Hold (Wall/Chest)', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Planche Lean', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Dead Hang', section: 'Static Exercises', metric_type: 'time' },
-      { name: 'Pull-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Dips (Parallel Bars)', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Pike Push-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Muscle-ups', section: 'Dynamic Exercises', metric_type: 'reps' },
-      { name: 'Shoulder Bridge Stretch', section: 'Stretching', metric_type: 'time' },
-      { name: 'Pike Hamstring Stretch', section: 'Stretching', metric_type: 'time' },
-      { name: 'Cobra Chest Stretch', section: 'Stretching', metric_type: 'time' },
+      { name: 'Jumping Jacks', section: 'warmup', metric_type: 'time' },
+      { name: 'Arm Circles & Crosses', section: 'warmup', metric_type: 'time' },
+      { name: 'Wrist Rotations & Flexions', section: 'joint_prep', metric_type: 'time' },
+      { name: 'Shoulder Dislocates', section: 'joint_prep', metric_type: 'reps' },
+      { name: 'Scapular Pull-ups', section: 'joint_prep', metric_type: 'reps' },
+      { name: 'Handstand Hold (Wall/Chest)', section: 'static', metric_type: 'time' },
+      { name: 'L-Sit Hold (Parallettes/Floor)', section: 'static', metric_type: 'time' },
+      { name: 'Planche Lean', section: 'static', metric_type: 'time' },
+      { name: 'Dead Hang', section: 'static', metric_type: 'time' },
+      { name: 'Pull-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Dips (Parallel Bars)', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Push-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Pike Push-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Muscle-ups', section: 'dynamic', metric_type: 'reps' },
+      { name: 'Shoulder Bridge Stretch', section: 'stretching', metric_type: 'time' },
+      { name: 'Pike Hamstring Stretch', section: 'stretching', metric_type: 'time' },
+      { name: 'Cobra Chest Stretch', section: 'stretching', metric_type: 'time' },
     ];
 
     try {
@@ -224,11 +224,11 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       if (planError) throw planError;
 
       const sectionOrder: Record<string, number> = {
-        'Warmup': 1,
-        'Joint Preparation': 2,
-        'Static Exercises': 3,
-        'Dynamic Exercises': 4,
-        'Stretching': 5,
+        'warmup': 1,
+        'joint_prep': 2,
+        'static': 3,
+        'dynamic': 4,
+        'stretching': 5,
       };
 
       const sortedExerciseIds = [...selectedExerciseIds].sort((aId, bId) => {
@@ -348,7 +348,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
   };
 
   return (
-    <div className="w-full max-w-md mx-auto pt-2 pb-24">
+    <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Toast Notification */}
       {toastMsg && (
         <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-retro-day-accent dark:bg-retro-night-accent text-white px-4 py-2 rounded-2xl shadow-lg text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
@@ -584,8 +584,8 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
       {/* ========================================================================= */}
       {showBuilder && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md max-h-[85vh] bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-retro-day-border dark:border-retro-night-border">
+          <div className="w-full max-w-md max-h-[85dvh] flex flex-col bg-retro-day-card dark:bg-retro-night-card rounded-3xl p-5 border-2 border-retro-day-border dark:border-retro-night-border shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-retro-day-border dark:border-retro-night-border shrink-0">
               <div className="flex items-center gap-2">
                 <Dumbbell className="w-5 h-5 text-retro-day-accent dark:text-retro-night-accent" />
                 <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text">
@@ -601,14 +601,14 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
             </div>
 
             {builderError && (
-              <div className="my-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs">
+              <div className="my-2 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-800 dark:text-rose-200 text-xs shrink-0">
                 {builderError}
               </div>
             )}
 
             <form onSubmit={handleCreatePlan} className="flex-1 flex flex-col overflow-hidden pt-3">
               {/* Routine Title */}
-              <div className="mb-3">
+              <div className="mb-3 shrink-0">
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted mb-1">
                   Routine Name
                 </label>
@@ -623,7 +623,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               </div>
 
               {/* Select Exercises header */}
-              <div className="flex items-center justify-between text-xs font-bold text-retro-day-textMuted dark:text-retro-night-textMuted mb-2">
+              <div className="flex items-center justify-between text-xs font-bold text-retro-day-textMuted dark:text-retro-night-textMuted mb-2 shrink-0">
                 <span className="uppercase tracking-wider">Select Exercises ({selectedExerciseIds.length})</span>
                 <span className="text-[11px] font-normal italic">Grouped by 5 sections</span>
               </div>
@@ -649,7 +649,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                 </div>
               ) : (
                 /* Scrollable multi-select categorized by 5 sections */
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                <div className="flex-1 overflow-y-auto px-1 py-2 space-y-3">
                   {SECTIONS.map((sec, idx) => {
                     const moves = catalogExercises.filter(ex => ex.section === sec);
                     if (moves.length === 0) return null;
@@ -696,7 +696,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 pt-3 border-t border-retro-day-border dark:border-retro-night-border mt-3">
+              <div className="flex gap-2 pt-3 border-t border-retro-day-border dark:border-retro-night-border mt-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowBuilder(false)}

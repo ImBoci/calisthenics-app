@@ -34,7 +34,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   const [profileMap, setProfileMap] = useState<Record<string, { display_name: string; username: string; avatar_url?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSection, setSelectedSection] = useState<string>('All');
+  const [selectedSection, setSelectedSection] = useState<string>('all');
+
+  // Map DB values to display labels (competitive categories only)
+  const FILTER_LABELS: Record<string, string> = {
+    'all': 'All',
+    'static': 'Static',
+    'dynamic': 'Dynamic',
+  };
   const [selectedExercise, setSelectedExercise] = useState<string>('All');
 
   useEffect(() => {
@@ -152,7 +159,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
   const filteredExercises = competitiveExercises.filter(ex => {
     const matchesSearch = !searchQuery || ex.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSection = selectedSection === 'All' || ex.section === selectedSection;
+    const matchesSection = selectedSection === 'all' || ex.section === selectedSection;
     const matchesExercise = selectedExercise === 'All' || ex.id === selectedExercise;
     return matchesSearch && matchesSection && matchesExercise;
   });
@@ -169,7 +176,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   const exercisesWithoutRecords = filteredExercises.filter(ex => !pbsByExercise[ex.id]?.length);
 
   return (
-    <div className="w-full max-w-md mx-auto pt-2 pb-24">
+    <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
@@ -219,9 +226,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         </select>
       </div>
 
-      {/* Section Filter Pills */}
+      {/* Section Filter Pills (Competitive categories only) */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none text-xs">
-        {['All', 'Static Exercises', 'Dynamic Exercises'].map(sec => {
+        {(['all', 'static', 'dynamic'] as const).map(sec => {
           const isSelected = selectedSection === sec;
           return (
             <button
@@ -233,7 +240,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                   : 'bg-retro-day-card dark:bg-retro-night-card text-retro-day-textMuted dark:text-retro-night-textMuted border-retro-day-border dark:border-retro-night-border hover:text-retro-day-text'
               }`}
             >
-              {sec}
+              {FILTER_LABELS[sec]}
             </button>
           );
         })}
