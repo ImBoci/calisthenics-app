@@ -125,14 +125,14 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto py-4 overflow-hidden">
+    <div className="w-full max-w-sm mx-auto my-auto py-2">
       {/* Brand Header */}
-      <div className="text-center mb-6">
-        <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-3xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-2.5">
+      <div className="text-center mb-4">
+        <div className="inline-block p-1 bg-retro-day-cardAlt dark:bg-retro-night-cardAlt rounded-2xl border-2 border-retro-day-border dark:border-retro-night-border shadow-md mb-2">
           <img
             src="/icon.svg"
             alt="Chalk & Timber Logo"
-            className="w-16 h-16 rounded-[22px] object-cover"
+            className="w-12 h-12 rounded-xl object-cover"
           />
         </div>
         <h1 className="text-2xl font-extrabold tracking-tight text-retro-day-text dark:text-retro-night-text font-sans">
@@ -144,7 +144,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       </div>
 
       {/* Retro Tab Switch */}
-      <div className="flex bg-retro-day-cardAlt dark:bg-retro-night-cardAlt p-1 rounded-xl mb-5 border border-retro-day-border dark:border-retro-night-border">
+      <div className="flex bg-retro-day-cardAlt dark:bg-retro-night-cardAlt p-1 rounded-xl mb-3 border border-retro-day-border dark:border-retro-night-border">
         <button
           type="button"
           onClick={() => { setIsSignUp(false); setErrorMsg(null); }}
@@ -168,7 +168,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
       </div>
 
       {/* Main Card */}
-      <div className="bg-retro-day-card dark:bg-retro-night-card rounded-2xl p-6 border-2 border-retro-day-border dark:border-retro-night-border shadow-[0_4px_20px_-4px_rgba(74,55,40,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]">
+      <div className="bg-retro-day-card dark:bg-retro-night-card rounded-2xl p-5 sm:p-7 border-2 border-retro-day-border dark:border-retro-night-border shadow-[0_4px_20px_-4px_rgba(74,55,40,0.08)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]">
         {/* Retro Styled Inline Error Banner */}
         {errorMsg && (
           <div className="mb-4 p-3.5 rounded-xl bg-amber-50 dark:bg-[#342722] border-2 border-amber-300 dark:border-amber-700/60 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5 shadow-sm animate-in fade-in duration-200">
@@ -177,7 +177,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {isSignUp && (
             <>
               <div>
@@ -194,7 +194,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Alex (Iron Grip)"
-                    className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
+                    className="w-full pl-10 pr-4 py-2.5 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
                   />
                 </div>
               </div>
@@ -216,7 +216,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck="false"
-                    className="w-full pl-9 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all font-mono text-base"
+                    className="w-full pl-9 pr-4 py-2.5 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all font-mono text-base"
                   />
                 </div>
               </div>
@@ -241,7 +241,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
-                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
+                className="w-full pl-10 pr-4 py-2.5 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
               />
             </div>
           </div>
@@ -261,7 +261,7 @@ export const LoginRegister: React.FC<LoginRegisterProps> = ({ onAuthSuccess }) =
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
+                className="w-full pl-10 pr-4 py-2.5 bg-retro-day-bg/60 dark:bg-retro-night-bg/60 border border-retro-day-border dark:border-retro-night-border rounded-xl text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent transition-all text-base"
               />
             </div>
           </div>

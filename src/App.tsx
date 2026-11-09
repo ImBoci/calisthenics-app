@@ -81,9 +81,9 @@ function MainApp() {
   }
 
   return (
-    <div className="h-[100dvh] bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200 flex flex-col justify-between overflow-hidden">
+    <div className="bg-retro-day-bg dark:bg-retro-night-bg text-retro-day-text dark:text-retro-night-text transition-colors duration-200 flex flex-col justify-between h-[100dvh] overflow-hidden">
       {/* Centered mobile-first container */}
-      <div className="w-full max-w-md mx-auto flex flex-col flex-1 h-[100dvh] relative overflow-hidden">
+      <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-0 relative h-full overflow-hidden">
         {/* Safe-area Top Header - Stays inside mobile column on both desktop & mobile */}
         <header className="w-full px-4 pt-safe pb-2 flex items-center justify-between z-30">
           <div className="flex items-center gap-2">
@@ -112,9 +112,9 @@ function MainApp() {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col justify-center px-4 pb-6 sm:pb-12 overflow-hidden">
+        <main className={`flex-1 flex flex-col min-h-0 px-4 ${session ? 'justify-center pb-6 sm:pb-12 overflow-hidden' : 'overflow-y-auto'}`}>
           {!session ? (
-            <div className="w-full h-[100dvh] flex flex-col justify-center items-center overflow-hidden -translate-y-4 sm:-translate-y-8 transition-transform">
+            <div className="w-full min-h-full flex flex-col justify-center items-center py-8 pb-12 my-auto">
               <LoginRegister onAuthSuccess={handleAuthSuccess} />
             </div>
           ) : (
