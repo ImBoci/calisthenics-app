@@ -187,6 +187,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
   // Admin: Approve suggestion -> moves to exercises table and deletes from suggestions
   const handleApproveSuggestion = async (sugg: ExerciseSuggestion) => {
     try {
+      // 1. Insert the new exercise into exercises
       const { data, error } = await supabase
         .from('exercises')
         .insert({
@@ -199,36 +200,82 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
       if (error) throw error;
 
-      await supabase
+      // 2. Immediately delete the suggestion from exercise_suggestions
+      const { error: delError } = await supabase
         .from('exercise_suggestions')
         .delete()
         .eq('id', sugg.id);
 
-      setExercises(prev => [...prev, data]);
-      const updated = suggestions.filter(s => s.id !== sugg.id);
-      setSuggestions(updated);
-      if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
+      if (delError) {
+        console.error('Error deleting suggestion after approval:', delError);
+      }
+
+      // 3. Update local state so badge and modal update immediately
+      if (data) {
+        setExercises(prev => [...prev, data]);
+      }
+      setSuggestions(prev => {
+        const next = prev.filter(s => s.id !== sugg.id);
+        if (onSuggestionCountChange) onSuggestionCountChange(next.length);
+        return next;
+      });
 
       showToast(`${t.approved}: "${sugg.exercise_name}"`);
     } catch (err) {
       console.error('Error approving suggestion:', err);
+      showToast(err instanceof Error ? err.message : 'Error approving suggestion');
     }
   };
 
   // Admin: Dismiss suggestion
   const handleDismissSuggestion = async (suggId: string) => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('exercise_suggestions')
         .delete()
         .eq('id', suggId);
 
-      const updated = suggestions.filter(s => s.id !== suggId);
-      setSuggestions(updated);
-      if (onSuggestionCountChange) onSuggestionCountChange(updated.length);
-      showToast(t.suggestionDismissed);
+      if (!error) {
+        // Remove from local suggestions list and decrement badge count
+        setSuggestions(prev => {
+          const next = prev.filter(s => s.id !== suggId);
+          if (onSuggestionCountChange) onSuggestionCountChange(next.length);
+          return next;
+        });
+        showToast(t.suggestionDismissed);
+      } else {
+        console.error('Error dismissing suggestion:', error);
+        showToast(error.message);
+      }
     } catch (err) {
       console.error('Error dismissing suggestion:', err);
+    }
+  };
+
+  // Admin: Delete exercise
+  const handleDeleteExercise = async (exercise: Exercise) => {
+    if (!isAdmin) return;
+    const confirmMsg = language === 'hu'
+      ? 'Biztosan törölni szeretnéd ezt a gyakorlatot?'
+      : 'Are you sure you want to delete this exercise?';
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const { error } = await supabase
+        .from('exercises')
+        .delete()
+        .eq('id', exercise.id);
+
+      if (!error) {
+        setExercises(prev => prev.filter(e => e.id !== exercise.id));
+        showToast(language === 'hu' ? 'Gyakorlat törölve' : 'Exercise deleted');
+      } else {
+        console.error('Error deleting exercise:', error);
+        showToast(error.message);
+      }
+    } catch (err) {
+      console.error('Error deleting exercise:', err);
     }
   };
 
@@ -479,6 +526,17 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 <div className="w-8 h-8 rounded-xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border flex items-center justify-center text-retro-day-accent dark:text-retro-night-accent">
                   {ex.metric_type === 'time' ? <Clock className="w-4 h-4" /> : <Repeat className="w-4 h-4" />}
                 </div>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteExercise(ex)}
+                    className="w-8 h-8 rounded-xl border border-rose-300 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 flex items-center justify-center transition-all active:scale-95"
+                    title={language === 'hu' ? 'Gyakorlat törlése' : 'Delete exercise'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
