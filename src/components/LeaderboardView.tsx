@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase, Exercise, UserPB, SECTIONS } from '../lib/supabase';
+import { supabase, Exercise, UserPB } from '../lib/supabase';
 import { 
   Trophy, 
   Crown, 
@@ -9,11 +9,13 @@ import {
   Clock, 
   Repeat, 
   ShieldCheck, 
-  X,
+  X, 
   Plus
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import { useLanguage, getSectionLabel } from '../context/LanguageContext';
+import { calculateUserLevel, getSquadLevel, SquadLevelInfo } from '../utils/levelCalculator';
+import { FriendProfileModal, FriendProfileData } from './FriendProfileModal';
 
 interface LeaderboardViewProps {
   currentUser: User | null;
@@ -30,13 +32,15 @@ interface RankedPB extends UserPB {
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, onNavigateToPBs }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [allPbs, setAllPbs] = useState<UserPB[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, { display_name: string; username: string; avatar_url?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<string>('all');
+  const [selectedExercise, setSelectedExercise] = useState<string>('All');
+  const [selectedFriend, setSelectedFriend] = useState<FriendProfileData | null>(null);
 
   // Map DB values to display labels (competitive categories only)
   const FILTER_LABELS: Record<string, string> = {
@@ -44,7 +48,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
     'static': t.filterStatic,
     'dynamic': t.filterDynamic,
   };
-  const [selectedExercise, setSelectedExercise] = useState<string>('All');
 
   useEffect(() => {
     loadLeaderboardData();
@@ -60,7 +63,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         .in('section', ['static', 'dynamic'])
         .order('name', { ascending: true });
 
-      console.log('Leaderboard fetched exercises:', exData, exErr);
       if (exErr) throw exErr;
       setExercises(exData || []);
 
@@ -70,7 +72,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         .select('*')
         .order('best_value', { ascending: false });
 
-      console.log('Leaderboard fetched PBs:', pbsData, pbsErr);
       if (pbsErr) throw pbsErr;
       setAllPbs(pbsData || []);
 
@@ -79,7 +80,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         .from('profiles')
         .select('id, display_name, username, avatar_url');
 
-      console.log('Leaderboard fetched profiles:', profilesData, profilesErr);
       if (!profilesErr && profilesData) {
         const map: Record<string, { display_name: string; username: string; avatar_url?: string }> = {};
         profilesData.forEach(p => {
@@ -135,18 +135,33 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
     });
   });
 
-  console.log('Leaderboard data loaded:', {
-    exercisesCount: exercises.length,
-    pbsCount: allPbs.length,
-    profilesCount: Object.keys(profileMap).length,
-    pbsByExerciseKeys: Object.keys(pbsByExercise),
+  // Calculate level for every squad member from their logged PBs
+  const userPbsMap: Record<string, { best_value: number; is_assisted: boolean; metric_type: string }[]> = {};
+  allPbs.forEach(pb => {
+    if (!userPbsMap[pb.user_id]) {
+      userPbsMap[pb.user_id] = [];
+    }
+    const ex = exercises.find(e => e.id === pb.exercise_id);
+    userPbsMap[pb.user_id].push({
+      best_value: pb.best_value,
+      is_assisted: pb.is_assisted,
+      metric_type: ex?.metric_type || 'reps',
+    });
+  });
+
+  const userLevelMap: Record<string, SquadLevelInfo> = {};
+  Object.keys(profileMap).forEach(userId => {
+    userLevelMap[userId] = calculateUserLevel(userPbsMap[userId] || [], language);
+  });
+  Object.keys(userPbsMap).forEach(userId => {
+    if (!userLevelMap[userId]) {
+      userLevelMap[userId] = calculateUserLevel(userPbsMap[userId], language);
+    }
   });
 
   // Sort each exercise's PBs:
-  // Bodyweight first or highest numeric value
   Object.keys(pbsByExercise).forEach(exId => {
     pbsByExercise[exId].sort((a, b) => {
-      // If one is unassisted and one is assisted, unassisted can rank higher if desired, or purely by best_value
       if (b.best_value !== a.best_value) {
         return b.best_value - a.best_value;
       }
@@ -160,18 +175,35 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   );
 
   const filteredExercises = competitiveExercises.filter(ex => {
-    const matchesSearch = !searchQuery || ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.toLowerCase().trim();
+    const rankings = pbsByExercise[ex.id] || [];
+    const matchesExName = !query || ex.name.toLowerCase().includes(query);
+    const matchesMemberName = Boolean(query && rankings.some(r =>
+      r.display_name.toLowerCase().includes(query) ||
+      (profileMap[r.user_id]?.username && profileMap[r.user_id].username.toLowerCase().includes(query))
+    ));
+    const matchesSearch = matchesExName || matchesMemberName;
     const matchesSection = selectedSection === 'all' || ex.section === selectedSection;
     const matchesExercise = selectedExercise === 'All' || ex.id === selectedExercise;
     return matchesSearch && matchesSection && matchesExercise;
   });
 
-  // Set initial selected exercise to 'All' if exercises exist
-  useEffect(() => {
-    if (exercises.length > 0 && selectedExercise === 'All') {
-      setSelectedExercise('All');
-    }
-  }, [exercises]);
+  const handleOpenFriendProfile = (userId: string, fallbackName: string, avatarUrl?: string) => {
+    const profile = profileMap[userId];
+    const isCurrent = userId === currentUser?.id;
+    const displayName = isCurrent 
+      ? (currentUser?.user_metadata?.display_name || fallbackName || t.you)
+      : (profile?.display_name || fallbackName);
+    const username = profile?.username || (isCurrent ? currentUser?.user_metadata?.username : '') || 'member';
+    const avatar = profile?.avatar_url || avatarUrl;
+
+    setSelectedFriend({
+      id: userId,
+      display_name: displayName,
+      username: username,
+      avatar_url: avatar
+    });
+  };
 
   // Separate exercises with records vs exercises without
   const exercisesWithRecords = filteredExercises.filter(ex => pbsByExercise[ex.id]?.length > 0);
@@ -194,14 +226,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         </button>
       </div>
 
-      {/* Search Input */}
+      {/* Search Input (filter by move or friend name/username) */}
       <div className="relative mb-3">
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-retro-day-textMuted dark:text-retro-night-textMuted pointer-events-none" />
         <input
           type="text"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
-          placeholder={t.searchScoreboard}
+          placeholder={language === 'hu' ? 'Keresés gyakorlat vagy sportoló neve alapján...' : 'Search moves or athlete name...'}
           className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-retro-day-card dark:bg-retro-night-card border border-retro-day-border dark:border-retro-night-border text-retro-day-text dark:text-retro-night-text placeholder-retro-day-textMuted/50 dark:placeholder-retro-night-textMuted/50 text-sm focus:outline-none focus:ring-2 focus:ring-retro-day-accent dark:focus:ring-retro-night-accent"
         />
         {searchQuery && (
@@ -320,15 +352,18 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                     const isFirst = idx === 0;
                     const isSecond = idx === 1;
                     const isThird = idx === 2;
+                    const memberLevel = userLevelMap[rank.user_id] || getSquadLevel(1.0, language);
 
                     return (
                       <div
                         key={rank.id}
-                        className={`p-2.5 rounded-2xl flex items-center justify-between gap-2.5 transition-colors ${
+                        onClick={() => handleOpenFriendProfile(rank.user_id, rank.display_name, rank.avatar_url)}
+                        className={`p-2.5 rounded-2xl flex items-center justify-between gap-2.5 transition-all cursor-pointer active:scale-[0.99] hover:border-retro-day-accent ${
                           rank.isCurrentUser
                             ? 'bg-retro-day-accentSoft/70 dark:bg-retro-night-accentSoft/40 border border-retro-day-accent/30 dark:border-retro-night-accent/30'
                             : 'bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/70 dark:border-retro-night-border/70'
                         }`}
+                        title={language === 'hu' ? 'Kattints a profil megtekintéséhez' : 'Click to inspect profile'}
                       >
                         {/* Rank Badge & Name */}
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -369,9 +404,14 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                           </div>
 
                           <div className="min-w-0">
-                            <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text truncate block">
-                              {rank.display_name} {rank.isCurrentUser && <span className="text-retro-day-accent dark:text-retro-night-accent font-semibold text-[11px]">({t.you})</span>}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-retro-day-text dark:text-retro-night-text truncate block">
+                                {rank.display_name} {rank.isCurrentUser && <span className="text-retro-day-accent dark:text-retro-night-accent font-semibold text-[11px]">({t.you})</span>}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded-md text-[9px] font-extrabold bg-retro-day-accent/15 dark:bg-retro-night-accent/25 text-retro-day-accent dark:text-retro-night-accent border border-retro-day-accent/30 dark:border-retro-night-accent/30 font-mono shrink-0">
+                                {memberLevel.badge}
+                              </span>
+                            </div>
                             {rank.is_assisted ? (
                               <span className="text-[10px] text-amber-800 dark:text-amber-300 font-medium truncate block">
                                 {t.assisted}: {rank.assist_notes || 'Band'}
@@ -428,7 +468,16 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           )}
         </div>
       )}
+
+      {/* Friend Profile Modal */}
+      {selectedFriend && (
+        <FriendProfileModal
+          friend={selectedFriend}
+          onClose={() => setSelectedFriend(null)}
+          allCompetitiveExercises={competitiveExercises}
+          allPbs={allPbs}
+        />
+      )}
     </div>
   );
 };
-

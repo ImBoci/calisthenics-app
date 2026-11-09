@@ -279,8 +279,8 @@ const translations: Record<Language, Translations> = {
     record: 'record',
 
     // Catalog
-    exerciseCatalog: 'Exercise Catalog',
-    add: 'Add',
+    exerciseCatalog: 'Exercises',
+    add: 'New',
     suggest: 'Suggest',
     searchMoves: 'Search moves (e.g. Pull-ups, Handstand)...',
     catalogEmpty: 'Catalog is empty',
@@ -473,8 +473,8 @@ const translations: Record<Language, Translations> = {
     record: 'rekord',
 
     // Catalog
-    exerciseCatalog: 'Gyakorlatkatalógus',
-    add: 'Hozzáadás',
+    exerciseCatalog: 'Gyakorlatok',
+    add: 'Új',
     suggest: 'Javaslat',
     searchMoves: 'Gyakorlatok keresése (pl. húzódzkodás, kézenállás)...',
     catalogEmpty: 'A katalógus üres',

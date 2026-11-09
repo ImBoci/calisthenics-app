@@ -3,7 +3,6 @@ import { supabase, Profile } from '../lib/supabase';
 import { User } from '@supabase/supabase-js';
 import {
   LogOut,
-  Dumbbell,
   Award,
   Calendar as CalendarIcon,
   Flame,
@@ -16,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { calculateUserLevel, getSquadLevel, SquadLevelInfo } from '../utils/levelCalculator';
 
 interface ProfileViewProps {
   onLogout: () => void;
@@ -38,13 +38,41 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
 
   // Editable fields
   const [displayName, setDisplayName] = useState('');
-  const [favoriteExercise, setFavoriteExercise] = useState('Pull-ups');
-  const [startingLevel, setStartingLevel] = useState('Beginner');
+  const [userLevel, setUserLevel] = useState<SquadLevelInfo>(() => getSquadLevel(1.0, language));
+  const [loggedPbCount, setLoggedPbCount] = useState(0);
 
   useEffect(() => {
     fetchProfile();
     fetchWorkoutDates();
-  }, [currentUser]);
+    if (currentUser) {
+      fetchUserLevel(currentUser.id);
+    }
+  }, [currentUser, language]);
+
+  const fetchUserLevel = async (userId: string) => {
+    try {
+      const [exRes, pbRes] = await Promise.all([
+        supabase.from('exercises').select('id, metric_type'),
+        supabase.from('user_pbs').select('*').eq('user_id', userId)
+      ]);
+
+      const exMap: Record<string, string> = {};
+      (exRes.data || []).forEach(ex => {
+        exMap[ex.id] = ex.metric_type;
+      });
+
+      const pbs = (pbRes.data || []).map(pb => ({
+        best_value: pb.best_value,
+        is_assisted: pb.is_assisted,
+        metric_type: exMap[pb.exercise_id] || 'reps'
+      }));
+
+      setLoggedPbCount(pbs.length);
+      setUserLevel(calculateUserLevel(pbs, language));
+    } catch (err) {
+      console.error('Error fetching user level:', err);
+    }
+  };
 
   const fetchWorkoutDates = async () => {
     if (!currentUser) return;
@@ -80,8 +108,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
       if (data) {
         setProfile(data);
         setDisplayName(data.display_name || '');
-        setFavoriteExercise(data.favorite_exercise || 'Pull-ups');
-        setStartingLevel(data.starting_level || 'Beginner');
       } else {
         // Fallback to user metadata if profile row isn't created yet
         const meta = user.user_metadata || {};
@@ -89,8 +115,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           id: user.id,
           username: meta.username || user.email?.split('@')[0] || 'athlete',
           display_name: meta.display_name || 'Athlete',
-          favorite_exercise: 'Pull-ups',
-          starting_level: 'Beginner',
           created_at: user.created_at,
         };
         setProfile(fallback);
@@ -113,8 +137,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
       const updates = {
         id: profile.id,
         display_name: displayName.trim(),
-        favorite_exercise: favoriteExercise,
-        starting_level: startingLevel,
         updated_at: new Date().toISOString(),
       };
 
@@ -402,56 +424,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
           </div>
         </div>
 
-        {/* Calisthenics Starter Stats */}
-        <div className="mt-6 pt-5 border-t border-retro-day-border dark:border-retro-night-border grid grid-cols-2 gap-3">
-          {/* Starting Level */}
-          <div className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-1">
-              {t.startingLevel}
-            </span>
-            {editing ? (
-              <select
-                value={startingLevel}
-                onChange={e => setStartingLevel(e.target.value)}
-                className="w-full text-xs font-bold bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border rounded p-1 text-retro-day-text dark:text-retro-night-text"
-              >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-                <option value="Beast Mode">Beast Mode</option>
-              </select>
-            ) : (
-              <p className="text-sm font-bold text-retro-day-text dark:text-retro-night-text flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent" />
-                {profile?.starting_level || 'Beginner'}
-              </p>
-            )}
-          </div>
-
-          {/* Favorite Exercise */}
-          <div className="p-3 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-1">
-              {t.favoriteMove}
-            </span>
-            {editing ? (
-              <select
-                value={favoriteExercise}
-                onChange={e => setFavoriteExercise(e.target.value)}
-                className="w-full text-xs font-bold bg-retro-day-bg dark:bg-retro-night-bg border border-retro-day-border dark:border-retro-night-border rounded p-1 text-retro-day-text dark:text-retro-night-text"
-              >
-                <option value="Pull-ups">Pull-ups</option>
-                <option value="Dips">Dips</option>
-                <option value="Push-ups">Push-ups</option>
-                <option value="Muscle-ups">Muscle-ups</option>
-                <option value="Handstands">Handstands</option>
-                <option value="Pistol Squats">Pistol Squats</option>
-              </select>
-            ) : (
-              <p className="text-sm font-bold text-retro-day-text dark:text-retro-night-text flex items-center gap-1.5 truncate">
-                <Dumbbell className="w-4 h-4 text-retro-day-accent dark:text-retro-night-accent shrink-0" />
-                <span className="truncate">{profile?.favorite_exercise || 'Pull-ups'}</span>
-              </p>
-            )}
+        {/* Calisthenics Level Badge */}
+        <div className="mt-6 pt-5 border-t border-retro-day-border dark:border-retro-night-border">
+          <div className="p-3.5 rounded-2xl bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border/80 dark:border-retro-night-border/80 flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-retro-day-textMuted dark:text-retro-night-textMuted block mb-0.5">
+                {language === 'hu' ? 'Kalistenika Szint' : 'Calisthenics Level'}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-extrabold text-retro-day-text dark:text-retro-night-text">
+                  {userLevel.title}
+                </span>
+                <span className="text-xs text-retro-day-textMuted font-mono">
+                  ({loggedPbCount} {loggedPbCount === 1 ? (language === 'hu' ? 'rekord' : 'PB') : (language === 'hu' ? 'rekord' : 'PBs')})
+                </span>
+              </div>
+            </div>
+            <div className="px-3 py-1.5 rounded-xl bg-retro-day-accent dark:bg-retro-night-accent text-white font-extrabold text-xs shadow-sm flex items-center gap-1.5 font-mono">
+              <Award className="w-4 h-4" />
+              <span>{userLevel.badge}</span>
+            </div>
           </div>
         </div>
 
