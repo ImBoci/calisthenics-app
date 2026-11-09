@@ -299,10 +299,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       )}
 
       {/* Header Bar */}
-      <div className="flex items-center justify-between w-full gap-2 mb-4">
-        <h2 className="text-base sm:text-lg font-extrabold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex items-center gap-2 truncate min-w-0">
+      <div className="flex items-center justify-between w-full mb-4 px-1">
+        <h2 className="text-base md:text-lg font-bold tracking-wider uppercase text-retro-day-accent dark:text-retro-night-accent flex items-center gap-2 truncate min-w-0">
           <BookOpen className="w-5 h-5 shrink-0" />
-          <span className="truncate">{t.exerciseCatalog}</span>
+          <span className="truncate">{language === 'hu' ? 'GYAKORLATOK' : 'EXERCISES'}</span>
         </h2>
         {/* Action Button: Admin Add vs Friend Suggest */}
         <div className="flex items-center gap-2 shrink-0">
@@ -325,7 +325,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
                 className="px-2.5 sm:px-3 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white text-xs font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
               >
                 <Plus className="w-4 h-4 shrink-0" />
-                <span>+ Új<span className="hidden sm:inline"> {language === 'hu' ? 'gyakorlat' : 'exercise'}</span></span>
+                <span>{language === 'hu' ? 'Új' : 'New'}<span className="hidden sm:inline"> {language === 'hu' ? 'gyakorlat' : 'Exercise'}</span></span>
               </button>
             </>
           ) : (

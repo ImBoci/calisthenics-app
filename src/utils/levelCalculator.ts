@@ -66,3 +66,4 @@ export function calculateUserLevel(pbs: PBScoreInput[], language: 'hu' | 'en' = 
   const avg = points.reduce((sum, pt) => sum + pt, 0) / points.length;
   return getSquadLevel(avg, language);
 }
+

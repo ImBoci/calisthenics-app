@@ -365,3 +365,4 @@ export const FriendProfileModal: React.FC<FriendProfileModalProps> = ({
     </div>
   );
 };
+

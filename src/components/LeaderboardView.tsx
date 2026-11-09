@@ -211,18 +211,18 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
   return (
     <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex-1 flex items-center justify-center gap-2">
-          <Crown className="w-5 h-5 text-amber-500 fill-amber-500" />
-          {t.leaderboard}
+      {/* Header Bar */}
+      <div className="flex items-center justify-between w-full mb-4 px-1">
+        <h2 className="text-base md:text-lg font-bold tracking-wider uppercase text-retro-day-accent dark:text-retro-night-accent flex items-center gap-2 truncate min-w-0">
+          <Crown className="w-5 h-5 text-amber-500 fill-amber-500 shrink-0" />
+          <span className="truncate">{language === 'hu' ? 'RANGLISTA' : 'LEADERBOARD'}</span>
         </h2>
         <button
           onClick={onNavigateToPBs}
-          className="px-3 py-1.5 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover text-white text-xs font-bold flex items-center gap-1 shadow-sm active:scale-95 transition-all"
+          className="px-2.5 sm:px-3 py-2 rounded-xl bg-retro-day-accent hover:bg-retro-day-accentHover dark:bg-retro-night-accent dark:hover:bg-retro-night-accentHover text-white text-xs font-bold flex items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition-all shrink-0"
         >
-          <Plus className="w-3.5 h-3.5" />
-          {t.logPB}
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>{language === 'hu' ? 'Új' : 'New'}<span className="hidden sm:inline"> {language === 'hu' ? 'rekord' : 'Record'}</span></span>
         </button>
       </div>
 

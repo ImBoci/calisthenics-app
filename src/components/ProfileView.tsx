@@ -337,11 +337,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogout, currentUser 
 
   return (
     <div className="w-full max-w-md mx-auto pt-2 pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      {/* Athlete Card Header */}
-      <div className="mb-4">
-        <h2 className="text-center text-xl font-extrabold uppercase tracking-[0.2em] text-retro-day-accent dark:text-retro-night-accent flex items-center justify-center gap-2">
-          <UserCircle2 className="w-5 h-5" />
-          {t.profile}
+      {/* Header Bar */}
+      <div className="flex items-center justify-between w-full mb-4 px-1">
+        <h2 className="text-base md:text-lg font-bold tracking-wider uppercase text-retro-day-accent dark:text-retro-night-accent flex items-center gap-2 truncate min-w-0">
+          <UserCircle2 className="w-5 h-5 shrink-0" />
+          <span className="truncate">{language === 'hu' ? 'PROFIL' : 'PROFILE'}</span>
         </h2>
       </div>
 
