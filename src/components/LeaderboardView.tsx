@@ -13,7 +13,7 @@ import {
   Plus
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { useLanguage, getSectionLabel } from '../context/LanguageContext';
+import { useLanguage, getSectionLabel, getExerciseName } from '../context/LanguageContext';
 import { calculateUserLevel, getSquadLevel, SquadLevelInfo } from '../utils/levelCalculator';
 import { FriendProfileModal, FriendProfileData } from './FriendProfileModal';
 
@@ -119,7 +119,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
 
     // Match exercise from exercises array by exercise_id
     const exercise = exercises.find(e => e.id === pb.exercise_id);
-    const exerciseName = exercise?.name || t.unknownExercise;
+    const exerciseName = exercise ? getExerciseName(exercise, language) : t.unknownExercise;
     const exerciseMetric = exercise?.metric_type || 'reps';
     const exerciseSection = exercise?.section || 'static';
     const avatarUrl = profile?.avatar_url;
@@ -177,7 +177,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
   const filteredExercises = competitiveExercises.filter(ex => {
     const query = searchQuery.toLowerCase().trim();
     const rankings = pbsByExercise[ex.id] || [];
-    const matchesExName = !query || ex.name.toLowerCase().includes(query);
+    const matchesExName = !query || ex.name.toLowerCase().includes(query) || (ex.name_en?.toLowerCase().includes(query) ?? false);
     const matchesMemberName = Boolean(query && rankings.some(r =>
       r.display_name.toLowerCase().includes(query) ||
       (profileMap[r.user_id]?.username && profileMap[r.user_id].username.toLowerCase().includes(query))
@@ -255,7 +255,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
         >
           <option value="All">{t.allCompetitiveExercises}</option>
           {competitiveExercises.map(ex => (
-            <option key={ex.id} value={ex.id}>{ex.name}</option>
+            <option key={ex.id} value={ex.id}>{getExerciseName(ex, language)}</option>
           ))}
         </select>
       </div>
@@ -305,7 +305,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
           {exercisesWithRecords.map(ex => {
             const rankings = pbsByExercise[ex.id] || [];
             const firstRanking = rankings[0];
-            const exerciseName = firstRanking?.exercise_name || ex.name;
+            const exerciseName = firstRanking?.exercise_name || getExerciseName(ex, language);
             const exerciseMetric = firstRanking?.exercise_metric_type || ex.metric_type;
             const exerciseSection = firstRanking?.exercise_section || ex.section;
             
@@ -452,7 +452,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({ currentUser, o
                     className="p-3 rounded-2xl bg-retro-day-card/60 dark:bg-retro-night-card/60 border border-dashed border-retro-day-border dark:border-retro-night-border flex items-center justify-between text-xs"
                   >
                     <span className="font-semibold text-retro-day-textMuted dark:text-retro-night-textMuted truncate pr-2">
-                      {ex.name}
+                      {getExerciseName(ex, language)}
                     </span>
                     <button
                       onClick={onNavigateToPBs}

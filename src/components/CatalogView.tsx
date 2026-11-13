@@ -16,7 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { useLanguage, getSectionLabel } from '../context/LanguageContext';
+import { useLanguage, getSectionLabel, getExerciseName } from '../context/LanguageContext';
 
 interface CatalogViewProps {
   currentUser: User | null;
@@ -136,7 +136,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
       setExercises(prev => [...prev, data]);
       setName('');
       setShowAddModal(false);
-      showToast(`${t.added}: "${data.name}"`);
+      showToast(`${t.added}: "${getExerciseName(data, language)}"`);
     } catch (err: unknown) {
       console.error('Add exercise exception:', err);
       if (err instanceof Error) {
@@ -327,7 +327,10 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
 
   // Filter exercises
   const filteredExercises = exercises.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      ex.name.toLowerCase().includes(q) ||
+      (ex.name_en?.toLowerCase().includes(q) ?? false);
     const matchesSection = selectedSectionFilter === 'all' || ex.section === selectedSectionFilter;
     return matchesSearch && matchesSection;
   });
@@ -497,7 +500,7 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
             >
               <div className="min-w-0 pr-3">
                 <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text truncate">
-                  {ex.name}
+                  {getExerciseName(ex, language)}
                 </h4>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-retro-day-cardAlt dark:bg-retro-night-cardAlt border border-retro-day-border dark:border-retro-night-border text-retro-day-textMuted dark:text-retro-night-textMuted">
@@ -873,8 +876,8 @@ export const CatalogView: React.FC<CatalogViewProps> = ({ currentUser, onSuggest
               </h3>
               <p className="text-sm text-stone-400 leading-relaxed">
                 {language === 'hu'
-                  ? `Biztosan törölni szeretnéd a(z) "${exerciseToDelete.name}" gyakorlatot? Ez a lépés nem vonható vissza.`
-                  : `Are you sure you want to delete "${exerciseToDelete.name}"? This action cannot be undone.`}
+                  ? `Biztosan törölni szeretnéd a(z) "${getExerciseName(exerciseToDelete, language)}" gyakorlatot? Ez a lépés nem vonható vissza.`
+                  : `Are you sure you want to delete "${getExerciseName(exerciseToDelete, language)}"? This action cannot be undone.`}
               </p>
             </div>
             <div className="flex gap-2">

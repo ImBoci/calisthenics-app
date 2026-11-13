@@ -15,7 +15,7 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { useLanguage, getSectionLabel } from '../context/LanguageContext';
+import { useLanguage, getSectionLabel, getExerciseName } from '../context/LanguageContext';
 
 interface PBsViewProps {
   currentUser: User | null;
@@ -153,7 +153,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
       setUserPbs(prev => ({ ...prev, [selectedExercise.id]: savedRecord }));
       setSelectedExercise(null);
-      showToast(`${t.pbUpdated}: ${selectedExercise.name}! 🔥`);
+      showToast(`${t.pbUpdated}: ${getExerciseName(selectedExercise, language)}! 🔥`);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setModalError(err.message);
@@ -167,7 +167,10 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
   // Filter exercises (competitive categories only: static, dynamic)
   const filtered = exercises.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      ex.name.toLowerCase().includes(q) ||
+      (ex.name_en?.toLowerCase().includes(q) ?? false);
     const matchesSection = selectedSection === 'all' || ex.section === selectedSection;
     return matchesSearch && matchesSection;
   });
@@ -281,7 +284,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
 
                 <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-bold text-retro-day-text dark:text-retro-night-text truncate font-sans mb-1">
-                    {ex.name}
+                    {getExerciseName(ex, language)}
                   </h4>
 
                   {/* PB Badge Display */}
@@ -359,7 +362,7 @@ export const PBsView: React.FC<PBsViewProps> = ({ currentUser }) => {
                     {getSectionLabel(t, selectedExercise.section)}
                   </span>
                   <h3 className="text-base font-bold text-retro-day-text dark:text-retro-night-text leading-tight">
-                    {selectedExercise.name}
+                    {getExerciseName(selectedExercise, language)}
                   </h3>
                 </div>
               </div>

@@ -16,7 +16,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
-import { useLanguage, getSectionLabel } from '../context/LanguageContext';
+import { useLanguage, getSectionLabel, getExerciseName } from '../context/LanguageContext';
 
 interface WorkoutsViewProps {
   currentUser: User | null;
@@ -486,7 +486,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                                     ? 'line-through text-retro-day-textMuted dark:text-retro-night-textMuted'
                                     : 'text-retro-day-text dark:text-retro-night-text'
                                 }`}>
-                                  {ex.name}
+                                  {getExerciseName(ex, language)}
                                 </span>
                               </div>
 
@@ -694,7 +694,7 @@ export const WorkoutsView: React.FC<WorkoutsViewProps> = ({ currentUser, onNavig
                                       : 'bg-retro-day-surface dark:bg-retro-night-surface text-retro-day-text dark:text-retro-night-text border-retro-day-border dark:border-retro-night-border'
                                   }`}
                                 >
-                                  <span className="truncate pr-2">{m.name}</span>
+                                  <span className="truncate pr-2">{getExerciseName(m, language)}</span>
                                   <div className="flex items-center gap-1 shrink-0 text-[10px] font-mono opacity-80">
                                     {m.metric_type === 'time' ? <Clock className="w-3 h-3" /> : <Repeat className="w-3 h-3" />}
                                     {isSelected && <Check className="w-3.5 h-3.5 ml-1 stroke-[3]" />}

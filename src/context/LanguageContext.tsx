@@ -630,6 +630,12 @@ export const useLanguage = () => {
   return context;
 };
 
+/** Resolves the localized display name for an exercise (HU `name` vs EN `name_en`). */
+export const getExerciseName = (
+  exercise: { name: string; name_en?: string | null },
+  lang: Language
+): string => (lang === 'en' ? (exercise.name_en || exercise.name) : exercise.name);
+
 /** Resolves a localized display label for a routine/exercise section key. */
 export const getSectionLabel = (t: Translations, section: string): string => {
   switch (section) {

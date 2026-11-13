@@ -60,6 +60,7 @@ export interface Profile {
 export interface Exercise {
   id: string;
   name: string;
+  name_en?: string;
   section: ExerciseSection;
   metric_type: MetricType;
   created_at?: string;
